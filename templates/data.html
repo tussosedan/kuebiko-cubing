@@ -1,0 +1,190 @@
+{% extends "base.html"%}
+{% block content %}
+
+<div id="loading" class="loader" style="display:inline;">
+</div>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-denim" id="main-navbar">
+
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <a class="navbar-brand" href="#"><b>Kuebiko Cubing</b></a>
+
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav nav">
+
+            <li class="nav-item"><a href="#" class="nav-link"></a>
+            </li>
+
+            <li class="nav-item"><a id="pbs-tab" href="#pbs" aria-controls="pbs"
+                                    role="tab" data-toggle="tab"
+                                    class="nav-link text-white"
+                                    aria-selected="true">Overall PB Summary</a>
+            </li>
+
+            <li class="nav-item"><a href="#" class="nav-link"></a>
+            </li>
+
+            {% for puz,cats in solves_details.items() %}
+            {% set outerloop = loop %}
+
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle text-white {% if loop.index == 1 %} active {% endif %}"
+                   id="puz-{{ puz }}-dropdown" href="#"
+                   role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                   aria-selected="true">{{ puz }}</a>
+
+                <div class="dropdown-menu" aria-labelledby="puz-{{ puz }}-dropdown">
+
+                    {% for cat,details in cats.items() %}
+                    <a class="dropdown-item {% if outerloop.index == 1 and loop.index == 1 %} active {% endif %}"
+                       id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-tab"
+                       href="#puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}"
+                       aria-controls="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}"
+                       role="tab"
+                       data-toggle="tab"
+                       aria-selected="true">{{ cat }}</a>
+                    {% endfor %}
+
+                </div>
+            </li>
+            {% endfor %}
+
+            <li class="nav-item">
+                <a href="{{url_for('index')}}" class="nav-link text-white"></a>
+            </li>
+            <li class="nav-item">
+                <a href="{{url_for('index')}}" class="nav-link text-white">Analyze another file</a>
+            </li>
+
+        </ul>
+    </div>
+
+</nav>
+
+
+<div class="tab-content" id="maintabcontent">
+    <div role="tabpanel" class="tab-pane fade"
+         id="pbs"
+         aria-labelledby="pbs-tab">
+
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary justify-content-center">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="navbar-item text-white"><h4>Overall PB Summary</h4></li>
+            </ul>
+        </nav>
+
+        <div class="table-responsive">
+            {{ overall_pbs.to_html(classes="table table-bordered table-striped table-sm
+            text-center", justify="center", na_rep='--') | safe }}
+        </div>
+    </div>
+
+    {% for puz,cats in solves_details.items() %}
+    {% set outerloop = loop %}
+    {% for cat,details in cats.items() %}
+    <div role="tabpanel"
+         class="tab-pane fade {% if outerloop.index == 1 and loop.index == 1 %} show active {% endif %}"
+         id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}"
+         aria-labelledby="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-tab">
+
+
+        <!-- Per-category Tabs -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary justify-content-center inner-navbar"
+             id="inner-navbar-{{ outerloop.index }}-{{ loop.index }}">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="navbar-brand"><b>{% if puz != 'Sessions' %}{{ puz }} - {% endif %}{{ cat }}</b></li>
+
+                <li class="nav-item"><a id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-plot-tab"
+                                        href="#puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-plot"
+                                        aria-controls="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-plot"
+                                        role="tab" data-toggle="tab"
+                                        class="nav-link active text-white bg-primary"
+                                        aria-selected="true">Chart</a>
+                </li>
+
+                <li class="nav-item"><a id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs-tab"
+                                        href="#puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs"
+                                        aria-controls="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs"
+                                        role="tab" data-toggle="tab"
+                                        class="nav-link text-white bg-primary"
+                                        aria-selected="true">PBs</a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Per Category Tab panes -->
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane fade"
+                 id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs"
+                 aria-labelledby="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs-tab">
+                <div class="container-fluid">
+                    <div class="table-responsive fixed-table-body">
+                        {{ details[0].to_html(classes="table table-bordered table-striped
+                        text-center", justify="center", index=False, na_rep='--') | safe }}
+                    </div>
+                </div>
+            </div>
+
+            <div role="tabpanel" class="tab-pane fade show active"
+                 id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-plot"
+                 aria-labelledby="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-plot-tab">
+                {{ details[1] | safe }}
+            </div>
+        </div>
+
+
+    </div>
+    {% endfor %}
+    {% endfor %}
+
+</div>
+
+
+
+<script type="application/javascript">
+function resizePlotVisible() {
+    var myWidth = window.innerWidth;
+    var myHeight = window.innerHeight - $("#main-navbar").outerHeight() - $(".inner-navbar:visible").first().outerHeight();
+
+    $(".plotly-graph-div:visible").each(function(){
+        Plotly.relayout(this, {width:myWidth, height:myHeight});
+    });
+}
+
+function resizePlotsHidden() {
+    var myWidth = window.innerWidth;
+    var myHeight = window.innerHeight - $("#main-navbar").outerHeight() - $(".inner-navbar:visible").first().outerHeight();
+
+    $(".plotly-graph-div").not(":visible").each(function(){
+        Plotly.relayout(this, {width:myWidth, height:myHeight});
+    });
+}
+
+function resizePlots() {
+    resizePlotVisible();
+    setTimeout(function () { resizePlotsHidden(); }, 0);
+}
+
+window.onload = function () {
+        resizePlots();
+        $('#loading').hide();
+    }
+
+window.onresize = function () {
+        resizePlots();
+    }
+
+// collapse navbar toggle on menu selection
+ $(function(){
+     $(".dropdown-item, #pbs-tab").on("click", function () {
+         $("#navbarSupportedContent").collapse('hide');
+     });
+ });
+
+</script>
+
+{% endblock %}

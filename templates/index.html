@@ -1,0 +1,39 @@
+{% extends "base.html"%}
+{% block content %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-denim">
+    <a class="navbar-brand" href="{{url_for('index')}}"><b>Kuebiko Cubing</b></a>
+</nav>
+
+
+<div id="content" class="jumbotron text-center">
+    <div class="d-flex justify-content-center">
+        <form action="{{url_for('index')}}" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file" class="h4">Upload a timer backup file for analysis</label>
+                <div class="text-muted">Supported timers: TwistyTimer, cstimer</div><br/>
+                <input type="file" name="file" id="file" class="form-control-file mx-auto" style="width: 220px;">
+            </div>
+            <button type="submit" class="btn btn-primary" onclick="loading()">
+                Submit
+            </button>
+        </form>
+    </div>
+</div>
+<nav id="loading-navbar" style="display: none;"
+     class="navbar navbar-expand-lg navbar-dark bg-primary justify-content-center">
+    <ul class="nav">
+        <li class="navbar-item text-white"><h4>Loading...</h4></li>
+    </ul>
+</nav>
+<div id="loading" class="loader">
+</div>
+
+<script type="application/javascript">
+function loading() {
+    $('#content').hide();
+    $('#loading').show();
+    $('#loading-navbar').show();
+}
+</script>
+
+{% endblock %}

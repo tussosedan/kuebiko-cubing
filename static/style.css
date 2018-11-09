@@ -1,0 +1,21 @@
+.bg-denim{
+background-color: rgb(21, 96, 189) !important;
+}
+
+.li-square{
+list-style-type: square;
+}
+
+.loader {
+    display: none;
+    background: url(/static/loading.gif) no-repeat;
+    cursor: wait;
+    width: 300px;
+    height: 300px;
+
+    position: absolute;
+    top: 50%;
+    left: 50%;
+
+    margin: -128px 0 0 -128px;
+    }
