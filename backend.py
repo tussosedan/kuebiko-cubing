@@ -12,8 +12,6 @@ import json
 
 from collections import OrderedDict
 
-from timeit import default_timer as timer
-
 
 @jit
 def binary_search_2d(a, x, size):
@@ -321,8 +319,6 @@ def create_dataframe(file):
 
 
 def process_data(file):
-    start = timer()
-
     solves_data, has_dates = create_dataframe(file)
 
     if has_dates:
@@ -355,11 +351,6 @@ def process_data(file):
         solves_data.groupby(['Puzzle', 'Category'])[
             ['single_cummin', 'mo3_cummin', 'ao5_cummin', 'ao12_cummin',
              'ao50_cummin', 'ao100_cummin', 'ao1000_cummin']].fillna(method='ffill')
-
-    before_return = timer()
-
-    print(
-        f'* main - start to before_return: {before_return-start}')
 
     return get_all_solves_details(solves_data, has_dates), get_overall_pbs(solves_data)
 
