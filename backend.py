@@ -146,7 +146,7 @@ def get_pb_progression(solves_data, puzzle, category, col_name, has_dates):
 
 def get_all_solves_details(solves_data, has_dates):
     # generate a nested dict puzzle -> category -> pb progression df
-    puzcats = {k: sorted(g['Category'].tolist(), key=lambda s: s.casefold())
+    puzcats = {k: sorted(g['Category'].tolist(), key=lambda s: str(s).casefold())
                for k, g in solves_data[['Puzzle', 'Category']].drop_duplicates().groupby('Puzzle')}
 
     resdict = OrderedDict()
@@ -179,7 +179,7 @@ def get_overall_pbs(solves_data):
     pbs_with_count = concat([counts, pbs], axis=1)
 
     pbs_with_count = pbs_with_count.reindex(
-        sorted(pbs_with_count.index, key=lambda s: (s[0].casefold(), s[1].casefold())))
+        sorted(pbs_with_count.index, key=lambda s: (str(s[0]).casefold(), str(s[1]).casefold())))
 
     if (pbs_with_count.index.levels[0] == 'Sessions').all():
         # no need to display if no puzzle data
