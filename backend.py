@@ -146,7 +146,7 @@ def get_pb_progression(solves_data, puzzle, category, col_name, has_dates):
 
 def get_all_solves_details(solves_data, has_dates):
     # generate a nested dict puzzle -> category -> pb progression df
-    puzcats = {k: g['Category'].tolist()
+    puzcats = {k: sorted(g['Category'].tolist(), key=lambda s: s.casefold())
                for k, g in solves_data[['Puzzle', 'Category']].drop_duplicates().groupby('Puzzle')}
 
     resdict = OrderedDict()
@@ -159,7 +159,12 @@ def get_all_solves_details(solves_data, has_dates):
             else:
                 pbs_display = pbs[['Result', 'Solve #', 'PB For # Solves']]
             catdict[cat] = pbs_display, get_solves_plot(solves_data, puz, cat, has_dates)
-        resdict[puz] = catdict
+
+        renamed_puz = puz
+        if puz in ('222', '333', '444', '555', '666', '777'):
+            renamed_puz = puz[0] + 'x' + puz[0]
+
+        resdict[renamed_puz] = catdict
 
     return resdict
 
@@ -173,9 +178,21 @@ def get_overall_pbs(solves_data):
 
     pbs_with_count = concat([counts, pbs], axis=1)
 
+    pbs_with_count = pbs_with_count.reindex(
+        sorted(pbs_with_count.index, key=lambda s: (s[0].casefold(), s[1].casefold())))
+
     if (pbs_with_count.index.levels[0] == 'Sessions').all():
+        # no need to display if no puzzle data
         pbs_with_count.index = pbs_with_count.index.droplevel(level=0)
         pbs_with_count.rename_axis(None, inplace=True)
+    else:
+        # rename NNN to NxN for TwistyTimer
+        renamed_puzzles = []
+        for puzzle in pbs_with_count.index.levels[0]:
+            if puzzle in ('222', '333', '444', '555', '666', '777'):
+                puzzle = puzzle[0] + 'x' + puzzle[0]
+            renamed_puzzles.append(puzzle)
+        pbs_with_count.index = pbs_with_count.index.set_levels(renamed_puzzles, level=0)
 
     return pbs_with_count
 
@@ -347,7 +364,4 @@ def process_data(file):
     return get_all_solves_details(solves_data, has_dates), get_overall_pbs(solves_data)
 
 # TODO add histogram of solves with dynamic time/index range filters?
-# TODO rename twistytimer puzzles from NNN to NxN
-# TODO sort categories in dropdowns
-# TODO add google analytics before publicizing
 # TODO random loading messages
