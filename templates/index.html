@@ -41,6 +41,25 @@ $(function () {
   $('[data-toggle="tooltip"]').tooltip()
 })
 
+function shuffle(array) {
+    var i = array.length,
+        j = 0,
+        temp;
+
+    while (i--) {
+
+        j = Math.floor(Math.random() * (i+1));
+
+        // swap randomly chosen element with current element
+        temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+
+    }
+
+    return array;
+}
+
 function loading() {
     $('#content').hide();
     $('#loading').show();
@@ -64,8 +83,13 @@ function loading() {
 "Deleting all bad solves",
 "Using only hand scrambles"
                      ];
+
+    var randText = shuffle(loadingText);
+    var i = 0;
+
     setInterval(function() {
-        var newText = loadingText[Math.floor(Math.random() * loadingText.length)] + "...";
+        var newText = randText[i % randText.length] + "...";
+        i++;
         $("#loading-message").fadeOut(500, function () {
             $(this).text(newText).fadeIn(500);
         });
