@@ -12,6 +12,7 @@ list-style-type: square;
     cursor: wait;
     width: 300px;
     height: 300px;
+    z-index: 9999;
 
     position: absolute;
     top: 50%;
