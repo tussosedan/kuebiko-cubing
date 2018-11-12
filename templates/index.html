@@ -2,6 +2,7 @@
 {% block content %}
 <nav class="navbar navbar-expand-lg navbar-dark bg-denim">
     <a class="navbar-brand" href="{{url_for('index')}}"><b>Kuebiko Cubing</b></a>
+    <a class="nav-item nav-link text-white ml-auto" href="https://github.com/tussosedan/kuebiko-cubing">GitHub</a>
 </nav>
 
 
@@ -10,7 +11,13 @@
         <form action="{{url_for('index')}}" method="POST" enctype="multipart/form-data">
             <div class="form-group">
                 <label for="file" class="h4">Upload a timer backup file for analysis</label>
-                <div class="text-muted">Supported timers: TwistyTimer, cstimer</div><br/>
+                <div class="text-muted">Supported timers:
+                    <a href="#" data-toggle="tooltip" data-placement="bottom" data-html="true"
+                       title="Export/Import > Export ><br/> For backup">TwistyTimer</a>,
+                    <a href="#" data-toggle="tooltip" data-placement="bottom" data-html="true"
+                       title="Export > Export to file">cstimer</a>
+                </div>
+                <br/>
                 <input type="file" name="file" id="file" class="form-control-file mx-auto" style="width: 220px;">
             </div>
             <button type="submit" class="btn btn-primary" onclick="loading()">
@@ -22,18 +29,48 @@
 <nav id="loading-navbar" style="display: none;"
      class="navbar navbar-expand-lg navbar-dark bg-primary justify-content-center">
     <ul class="nav">
-        <li class="navbar-item text-white"><h4>Loading...</h4></li>
+        <li class="navbar-item text-white"><h4 id="loading-message">Loading...</h4></li>
     </ul>
 </nav>
 <div id="loading" class="loader">
 </div>
 
 <script type="application/javascript">
+$(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+})
+
 function loading() {
     $('#content').hide();
     $('#loading').show();
     $('#loading-navbar').show();
+
+    var loadingText = [
+"Planning LL skip in inspection",
+"Learning ZBLL in 5 minutes",
+"Practicing for the next episode of Worst Judges",
+"Browsing r/cubers instead of practicing",
+"Buying every flagship ever released",
+"Magnetizing the blindfold",
+"Solving FB in 3 moves on average",
+"Rotating y2 twice",
+"Just one more solve",
+"Doing table abuse without a table",
+"Is that a 10x10?",
+"Peeling off the stickers",
+"Doing 7x7 FMC",
+"Just using Petrus",
+"Deleting all bad solves",
+"Using only hand scrambles"
+                     ];
+    setInterval(function() {
+        var newText = loadingText[Math.floor(Math.random() * loadingText.length)] + "...";
+        $("#loading-message").fadeOut(500, function () {
+            $(this).text(newText).fadeIn(500);
+        });
+        }, 4 * 1000)
 }
+
 </script>
 
 {% endblock %}
