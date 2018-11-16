@@ -164,6 +164,7 @@ function resizePlotVisible() {
     });
 }
 
+
 function resizePlotsHidden() {
     var myWidth = window.innerWidth;
     var myHeight = window.innerHeight - $("#main-navbar").outerHeight() - $(".inner-navbar:visible").first().outerHeight();
@@ -173,19 +174,41 @@ function resizePlotsHidden() {
     });
 }
 
+
 function resizePlots() {
     resizePlotVisible();
     setTimeout(function () { resizePlotsHidden(); }, 0);
 }
 
+
 window.onload = function () {
         resizePlots();
         $('#loading').hide();
+        gtag('event', 'finish_loading_file');
     }
 
-window.onresize = function () {
+
+// resize handling
+var rtime;
+var timeout = false;
+var delta = 250;
+$(window).resize(function() {
+    rtime = new Date();
+    if (timeout === false) {
+        timeout = true;
+        setTimeout(resizeend, delta);
+    }
+});
+
+function resizeend() {
+    if (new Date() - rtime < delta) {
+        setTimeout(resizeend, delta);
+    } else {
+        timeout = false;
         resizePlots();
     }
+}
+
 
 // collapse navbar toggle on menu selection
  $(function(){
@@ -195,6 +218,15 @@ window.onresize = function () {
  });
 
 
+// google analytics events
+$('.inner-navbar ul li a').click(function() {
+  gtag('event', this.id);
+  gtag('event', $(this).text());
+});
+
+$('#pbs-tab').click(function() {
+  gtag('event', this.id);
+});
 
 
 </script>

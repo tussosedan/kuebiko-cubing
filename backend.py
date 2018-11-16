@@ -354,4 +354,5 @@ def process_data(file):
 
     return get_all_solves_details(solves_data, has_dates), get_overall_pbs(solves_data)
 
-# TODO add histogram of solves with dynamic time/index range filters?
+# TODO histograms, looks like full dynamic sliders to select data isn't possible with plotly, need callbacks.
+# generate a few histograms as bar charts and use plotly buttons to switch them? e.g. last ao100/ao1000/pbsX/first100?
