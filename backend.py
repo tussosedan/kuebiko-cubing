@@ -365,12 +365,14 @@ def create_dataframe(file):
 
     if headers.startswith('Puzzle,Category,Time(millis),Date(millis),Scramble,Penalty,Comment'):
         # TwistyTimer
+        timer_type ='TwistyTimer'
         df = read_csv(file.stream, sep=';', skiprows=1, header=None)
         df.columns = headers.strip().split(sep=',')
         has_dates = True
-        return df.rename_axis('MyIdx').sort_values(['Date(millis)', 'MyIdx']), has_dates
+        return df.rename_axis('MyIdx').sort_values(['Date(millis)', 'MyIdx']), has_dates, timer_type
     elif headers.startswith('{"session1"'):
         # cstimer
+        timer_type = 'cstimer'
         data = json.load(file)
         solves = []
         for session_id, session_values in json.loads(json.loads(data['properties'])['sessionData']).items():
@@ -392,13 +394,13 @@ def create_dataframe(file):
         df = DataFrame(data=solves, columns=['Category', 'Time(millis)', 'Penalty'])
         has_dates = False
         df['Puzzle'] = 'Sessions'
-        return df, has_dates
+        return df, has_dates, timer_type
     else:
         raise NotImplementedError('Unrecognized file type')
 
 
 def process_data(file):
-    solves_data, has_dates = create_dataframe(file)
+    solves_data, has_dates, timer_type = create_dataframe(file)
 
     if has_dates:
         solves_data['DatetimeUTC'] = to_datetime(solves_data['Date(millis)'], unit='ms').astype('datetime64[s]')
@@ -431,7 +433,4 @@ def process_data(file):
             ['single_cummin', 'mo3_cummin', 'ao5_cummin', 'ao12_cummin',
              'ao50_cummin', 'ao100_cummin', 'ao1000_cummin']].fillna(method='ffill')
 
-    return get_all_solves_details(solves_data, has_dates), get_overall_pbs(solves_data)
-
-# TODO add confirmation to analyze new file
-# TODO gtag timer type and size / puz / cat stats
+    return get_all_solves_details(solves_data, has_dates), get_overall_pbs(solves_data), timer_type, len(solves_data)

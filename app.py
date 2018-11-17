@@ -30,8 +30,9 @@ def index():
             return redirect(request.url)
         if file and allowed_file(file.filename):
             try:
-                solves_details, overall_pbs = process_data(file)
-                return render_template("data.html", solves_details=solves_details, overall_pbs=overall_pbs)
+                solves_details, overall_pbs, timer_type, datalen = process_data(file)
+                return render_template("data.html", solves_details=solves_details, overall_pbs=overall_pbs,
+                                       timer_type=timer_type, datalen=datalen)
             except NotImplementedError:
                 flash('Unable to process file')
                 return redirect(request.url)

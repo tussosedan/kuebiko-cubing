@@ -199,7 +199,10 @@ function resizePlots() {
 window.onload = function () {
         resizePlots();
         $('#loading').hide();
-        gtag('event', 'finish_loading_file');
+        gtag('event', 'finish_loading_file', {
+                  'event_category': '{{ timer_type }}',
+                  'value': {{ datalen }}
+                });
     }
 
 
@@ -244,6 +247,10 @@ $('#pbs-tab').click(function() {
 });
 
 
+// Enable navigation prompt
+window.onbeforeunload = function() {
+    return true;
+};
 
 </script>
 
