@@ -3,7 +3,7 @@ from math import floor, ceil, isnan
 
 from numba import jit
 from numpy import sort, repeat, NaN, array
-from pandas import read_csv, to_datetime, concat, notnull, DataFrame
+from pandas import read_csv, to_datetime, concat, notnull, DataFrame, cut
 
 from plotly.offline import plot
 import plotly.graph_objs as go
@@ -156,7 +156,8 @@ def get_all_solves_details(solves_data, has_dates):
                 pbs_display = pbs[['Result', 'Date & Time [UTC]', 'PB For Time', 'Solve #', 'PB For # Solves']]
             else:
                 pbs_display = pbs[['Result', 'Solve #', 'PB For # Solves']]
-            catdict[cat] = pbs_display, get_solves_plot(solves_data, puz, cat, has_dates)
+            catdict[cat] = pbs_display, get_solves_plot(solves_data, puz, cat, has_dates), get_histograms_plot(
+                solves_data, puz, cat)
 
         renamed_puz = puz
         if puz in ('222', '333', '444', '555', '666', '777'):
@@ -279,6 +280,84 @@ def get_solves_plot(solves_data, puzzle, category, has_dates):
     return plot(fig, include_plotlyjs=False, output_type='div')
 
 
+def generate_histogram(plot_data_raw, name):
+    max_time = int(plot_data_raw.max()) + 1
+    min_time = int(plot_data_raw.min())
+    intervals = list(range(min_time, max_time + 1))
+    intervals_dt = [sec2dt(sec) for sec in intervals]
+    labels = [sec2dtstr(sec) + ".00-" + sec2dtstr(sec + 0.99) for sec in intervals[:-1]]
+
+    bins = cut(plot_data_raw, intervals, right=False, labels=labels)
+    plot_data = plot_data_raw.groupby(bins).count()
+
+    return go.Bar(
+        x=intervals_dt,
+        y=plot_data,
+        text=plot_data.index,
+        hoverinfo="x+y+text",
+        visible=False,
+        name=name
+    )
+
+
+def get_histograms_plot(solves_data, puzzle, category):
+    data = list()
+    solves_data_part = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)]
+
+    plot_data_raw = solves_data_part['single']
+    data.append(generate_histogram(plot_data_raw, 'all'))
+
+    plot_data_raw = solves_data_part['single'][-100:]
+    data.append(generate_histogram(plot_data_raw, 'last 100'))
+
+    part_reindexed = solves_data_part[['single', 'ao100', 'ao1000']].reset_index()
+    idxmin = part_reindexed['ao100'].idxmin()
+    if notnull(idxmin):
+        data.append(generate_histogram(part_reindexed['single'][idxmin+1-100: idxmin+1], 'PB ao100'))
+
+    plot_data_raw = solves_data_part['single'][-1000:]
+    data.append(generate_histogram(plot_data_raw, 'last 1000'))
+
+    idxmin = part_reindexed['ao1000'].idxmin()
+    if notnull(idxmin):
+        data.append(generate_histogram(part_reindexed['single'][idxmin+1-1000: idxmin+1], 'PB ao1000'))
+
+    data[0].visible = True
+
+    buttons = list()
+    datalen = len(data)
+    for i, bar in enumerate(data):
+        visibility = [True if trace == i else False for trace in range(datalen)]
+        buttons.append(dict(args=['visible', visibility],
+                            label=bar['name'],
+                            method='restyle'))
+
+    layout = go.Layout(margin={'l': 50,
+                               'r': 50,
+                               'b': 50,
+                               't': 75,
+                               'pad': 4
+                               },
+                       xaxis={'tickformat': '%M:%S'})
+
+    updatemenus = list([
+        dict(
+            buttons=buttons,
+            direction='left',
+            type='buttons',
+            x=0.1,
+            xanchor='left',
+            y=1.1,
+            yanchor='top'
+        ),
+    ])
+    layout['updatemenus'] = updatemenus
+
+    fig = dict(data=data, layout=layout)
+
+    return plot(fig, include_plotlyjs=False, output_type='div')
+
+
 def create_dataframe(file):
     file.seek(0)
     headers = file.readline().decode()
@@ -354,5 +433,5 @@ def process_data(file):
 
     return get_all_solves_details(solves_data, has_dates), get_overall_pbs(solves_data)
 
-# TODO histograms, looks like full dynamic sliders to select data isn't possible with plotly, need callbacks.
-# generate a few histograms as bar charts and use plotly buttons to switch them? e.g. last ao100/ao1000/pbsX/first100?
+# TODO add confirmation to analyze new file
+# TODO gtag timer type and size / puz / cat stats

@@ -116,6 +116,14 @@
                                         aria-selected="true">Chart</a>
                 </li>
 
+                <li class="nav-item"><a id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-histogram-tab"
+                                        href="#puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-histogram"
+                                        aria-controls="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-histogram"
+                                        role="tab" data-toggle="tab"
+                                        class="nav-link text-white bg-primary"
+                                        aria-selected="true">Histogram</a>
+                </li>
+
                 <li class="nav-item"><a id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs-tab"
                                         href="#puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs"
                                         aria-controls="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs"
@@ -144,6 +152,13 @@
                  aria-labelledby="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-plot-tab">
                 {{ details[1] | safe }}
             </div>
+
+            <div role="tabpanel" class="tab-pane fade"
+                 id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-histogram"
+                 aria-labelledby="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-histogram-tab">
+                {{ details[2] | safe }}
+            </div>
+
         </div>
 
 
@@ -227,6 +242,7 @@ $('.inner-navbar ul li a').click(function() {
 $('#pbs-tab').click(function() {
   gtag('event', this.id);
 });
+
 
 
 </script>
