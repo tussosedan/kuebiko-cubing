@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from math import floor, ceil, isnan
 
 from numba import jit
-from numpy import sort, repeat, NaN, array
+from numpy import sort, repeat, NaN, array, all
 from pandas import read_csv, to_datetime, concat, notnull, DataFrame, cut
 
 from plotly.offline import plot
@@ -180,7 +180,7 @@ def get_overall_pbs(solves_data):
     pbs_with_count = pbs_with_count.reindex(
         sorted(pbs_with_count.index, key=lambda s: (str(s[0]).casefold(), str(s[1]).casefold())))
 
-    if (pbs_with_count.index.levels[0] == 'Sessions').all():
+    if all(pbs_with_count.index.levels[0] == 'Sessions'):
         # no need to display if no puzzle data
         pbs_with_count.index = pbs_with_count.index.droplevel(level=0)
         pbs_with_count.rename_axis(None, inplace=True)
