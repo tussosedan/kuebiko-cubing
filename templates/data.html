@@ -237,13 +237,10 @@ function resizeend() {
 
 
 // google analytics events
-$('.inner-navbar ul li a').click(function() {
-  gtag('event', this.id);
-  gtag('event', $(this).text());
-});
-
-$('#pbs-tab').click(function() {
-  gtag('event', this.id);
+$('.inner-navbar ul li a, #pbs-tab').click(function() {
+  gtag('event', this.id, {
+                  'event_category': $(this).text()
+                });
 });
 
 
