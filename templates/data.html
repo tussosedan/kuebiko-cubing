@@ -172,17 +172,19 @@
 <script type="application/javascript">
 function resizePlotVisible() {
     var myWidth = window.innerWidth;
-    var myHeight = window.innerHeight - $("#main-navbar").outerHeight() - $(".inner-navbar:visible").first().outerHeight();
+    var myHeight = window.innerHeight - $("#main-navbar").outerHeight() - ($(".inner-navbar:visible").first().outerHeight() || 58);
 
     $(".plotly-graph-div:visible").each(function(){
         Plotly.relayout(this, {width:myWidth, height:myHeight});
     });
+
+    $('#loading').hide();
 }
 
 
 function resizePlotsHidden() {
     var myWidth = window.innerWidth;
-    var myHeight = window.innerHeight - $("#main-navbar").outerHeight() - $(".inner-navbar:visible").first().outerHeight();
+    var myHeight = window.innerHeight - $("#main-navbar").outerHeight() - ($(".inner-navbar:visible").first().outerHeight() || 58);
 
     $(".plotly-graph-div").not(":visible").each(function(){
         Plotly.relayout(this, {width:myWidth, height:myHeight});
@@ -190,15 +192,27 @@ function resizePlotsHidden() {
 }
 
 
+function resizePlotsAll() {
+    var myWidth = window.innerWidth;
+    var myHeight = window.innerHeight - $("#main-navbar").outerHeight() - ($(".inner-navbar:visible").first().outerHeight() || 58);
+
+    $(".plotly-graph-div").each(function(){
+        Plotly.relayout(this, {width:myWidth, height:myHeight});
+    });
+
+    $('#loading').hide();
+}
+
+
 function resizePlots() {
-    resizePlotVisible();
-    setTimeout(function () { resizePlotsHidden(); }, 0);
+    setTimeout(function () { resizePlotVisible(); }, 0);
+    setTimeout(function () { resizePlotsHidden(); }, 500);
+    //setTimeout(function () { resizePlotsAll(); }, 0);
 }
 
 
 window.onload = function () {
         resizePlots();
-        $('#loading').hide();
         gtag('event', 'finish_loading_file', {
                   'event_category': '{{ timer_type }}',
                   'value': {{ datalen }}
@@ -211,6 +225,7 @@ var rtime;
 var timeout = false;
 var delta = 250;
 $(window).resize(function() {
+    $('#loading').show();
     rtime = new Date();
     if (timeout === false) {
         timeout = true;
@@ -248,6 +263,7 @@ $('.inner-navbar ul li a, #pbs-tab').click(function() {
 window.onbeforeunload = function() {
     return true;
 };
+
 
 </script>
 
