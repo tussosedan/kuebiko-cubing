@@ -313,14 +313,14 @@ def get_histograms_plot(solves_data, puzzle, category):
     part_reindexed = solves_data_part[['single', 'ao100', 'ao1000']].reset_index()
     idxmin = part_reindexed['ao100'].idxmin()
     if notnull(idxmin):
-        data.append(generate_histogram(part_reindexed['single'][idxmin+1-100: idxmin+1], 'PB ao100'))
+        data.append(generate_histogram(part_reindexed['single'][idxmin + 1 - 100: idxmin + 1], 'PB ao100'))
 
     plot_data_raw = solves_data_part['single'][-1000:]
     data.append(generate_histogram(plot_data_raw, 'last 1000'))
 
     idxmin = part_reindexed['ao1000'].idxmin()
     if notnull(idxmin):
-        data.append(generate_histogram(part_reindexed['single'][idxmin+1-1000: idxmin+1], 'PB ao1000'))
+        data.append(generate_histogram(part_reindexed['single'][idxmin + 1 - 1000: idxmin + 1], 'PB ao1000'))
 
     data[0].visible = True
 
@@ -365,7 +365,7 @@ def create_dataframe(file):
 
     if headers.startswith('Puzzle,Category,Time(millis),Date(millis),Scramble,Penalty,Comment'):
         # TwistyTimer
-        timer_type ='TwistyTimer'
+        timer_type = 'TwistyTimer'
         df = read_csv(file.stream, sep=';', skiprows=1, header=None)
         df.columns = headers.strip().split(sep=',')
         has_dates = True
@@ -434,3 +434,6 @@ def process_data(file):
              'ao50_cummin', 'ao100_cummin', 'ao1000_cummin']].fillna(method='ffill')
 
     return get_all_solves_details(solves_data, has_dates), get_overall_pbs(solves_data), timer_type, len(solves_data)
+
+# TODO top 20 solves per puz-cat
+# TODO add daily / monthly / yearly number of solves, stacked bar for all together, and legend control
