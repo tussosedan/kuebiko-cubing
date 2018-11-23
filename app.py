@@ -67,6 +67,15 @@ def index():
     return render_template("index.html")
 
 
+@app.errorhandler(413)
+def request_entity_too_large():
+    flash(Markup('The file is too large. '
+                 'If the file is truly valid, please open an issue on the '
+                 '<a href="https://github.com/tussosedan/kuebiko-cubing/issues">github page</a>'
+                 ' and upload the file there.'))
+    return redirect(request.url), 413
+
+
 if __name__ == '__main__':
     # app.run(debug=True, host='0.0.0.0')
     app.run(debug=True)
