@@ -67,8 +67,9 @@ def index():
     return render_template("index.html")
 
 
+# noinspection PyUnusedLocal
 @app.errorhandler(413)
-def request_entity_too_large():
+def request_entity_too_large(e):
     flash(Markup('The file is too large. '
                  'If the file is truly valid, please open an issue on the '
                  '<a href="https://github.com/tussosedan/kuebiko-cubing/issues">github page</a>'
