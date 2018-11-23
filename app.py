@@ -1,6 +1,8 @@
-from flask import Flask, render_template, request, redirect, flash
+from flask import Flask, render_template, request, redirect, flash, Markup
 
 from backend import process_data
+
+import json
 
 app = Flask(__name__)
 app.secret_key = "super secret key !@#"
@@ -26,7 +28,10 @@ def index():
             flash('Please select a file')
             return redirect(request.url)
         if file and not allowed_file(file.filename):
-            flash('Invalid file type')
+            flash(Markup('Looks like this file type is not supported yet. '
+                         'Please open an issue on the '
+                         '<a href="https://github.com/tussosedan/kuebiko-cubing/issues">github page</a>'
+                         ' and upload the file there.'))
             return redirect(request.url)
         if file and allowed_file(file.filename):
             try:
@@ -34,7 +39,16 @@ def index():
                 return render_template("data.html", solves_details=solves_details, overall_pbs=overall_pbs,
                                        timer_type=timer_type, datalen=datalen)
             except NotImplementedError:
-                flash('Unable to process file')
+                flash(Markup('Looks like this file type is not supported yet. '
+                             'Please open an issue on the '
+                             '<a href="https://github.com/tussosedan/kuebiko-cubing/issues">github page</a>'
+                             ' and upload the file there.'))
+                return redirect(request.url)
+            except (json.decoder.JSONDecodeError, ValueError, KeyError):
+                flash(Markup('Something went wrong while reading the file. '
+                             'Please open an issue on the '
+                             '<a href="https://github.com/tussosedan/kuebiko-cubing/issues">github page</a>'
+                             ' and upload the file there.'))
                 return redirect(request.url)
     return render_template("index.html")
 
