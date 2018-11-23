@@ -1,12 +1,19 @@
 from flask import Flask, render_template, request, redirect, flash, Markup
-
 from backend import process_data
-
 import json
+import os
+import traceback
+import time
+from werkzeug.utils import secure_filename
+
+
+ALLOWED_EXTENSIONS = {'txt'}
+UPLOAD_FOLDER = r'C:\uploads'
 
 app = Flask(__name__)
 app.secret_key = "super secret key !@#"
-ALLOWED_EXTENSIONS = {'txt'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 
 def allowed_file(filename):
@@ -49,6 +56,13 @@ def index():
                              'Please open an issue on the '
                              '<a href="https://github.com/tussosedan/kuebiko-cubing/issues">github page</a>'
                              ' and upload the file there.'))
+                timestr = time.strftime("%Y%m%d_%H%M%S_")
+                filename = timestr + secure_filename(file.filename)
+                file.seek(0)
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                err_filename = filename + '_err'
+                with open(os.path.join(app.config['UPLOAD_FOLDER'], err_filename), 'w') as err_file:
+                    err_file.write(traceback.format_exc())
                 return redirect(request.url)
     return render_template("index.html")
 
