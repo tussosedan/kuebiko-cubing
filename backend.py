@@ -200,7 +200,10 @@ def get_overall_pbs(solves_data):
 def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by):
     plot_data = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)]
 
-    if has_dates and chart_by != 'chart-by-solve-num':
+    if chart_by == 'chart-by-solve-num':
+        has_dates = False
+
+    if has_dates:
         data_plot_x = plot_data['DatetimeUTC']
     else:
         plot_data.reset_index(inplace=True, drop=True)
@@ -492,8 +495,6 @@ def process_data(file, chart_by):
     return solves_details, overall_pbs, solves_by_dates, timer_type, len(solves_data)
 
 # TODO top 20 solves per puz-cat
-# TODO add daily / monthly / yearly number of solves, stacked bar for all together, and legend control
 # TODO timers support requested: block keeper, chaotimer
-# TODO chart toggle date / solve # for xaxis
-# TODO PB histories for aoX - how?
+# TODO PB histories for aoX - how? last 50 + truncation message? how to display?
 # TODO show number of subX solves, maybe a cumulative histogram?
