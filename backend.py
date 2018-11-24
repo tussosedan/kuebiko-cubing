@@ -149,7 +149,7 @@ def rename_puzzle(puz):
         return puz
 
 
-def get_all_solves_details(solves_data, has_dates):
+def get_all_solves_details(solves_data, has_dates, chart_by):
     # generate a nested dict puzzle -> category -> pb progression df
     puzcats = {k: sorted(g['Category'].tolist(), key=lambda s: str(s).casefold())
                for k, g in solves_data[['Puzzle', 'Category']].drop_duplicates().groupby('Puzzle')}
@@ -163,8 +163,9 @@ def get_all_solves_details(solves_data, has_dates):
                 pbs_display = pbs[['Result', 'Date & Time [UTC]', 'PB For Time', 'Solve #', 'PB For # Solves']]
             else:
                 pbs_display = pbs[['Result', 'Solve #', 'PB For # Solves']]
-            catdict[cat] = pbs_display, get_solves_plot(solves_data, puz, cat, has_dates), get_histograms_plot(
-                solves_data, puz, cat)
+            solves_plot = get_solves_plot(solves_data, puz, cat, has_dates, chart_by)
+            histograms_plot = get_histograms_plot(solves_data, puz, cat)
+            catdict[cat] = pbs_display, solves_plot, histograms_plot
 
         renamed_puz = rename_puzzle(puz)
         resdict[renamed_puz] = catdict
@@ -196,10 +197,10 @@ def get_overall_pbs(solves_data):
     return pbs_with_count
 
 
-def get_solves_plot(solves_data, puzzle, category, has_dates):
+def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by):
     plot_data = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)]
 
-    if has_dates:
+    if has_dates and chart_by != 'chart-by-solve-num':
         data_plot_x = plot_data['DatetimeUTC']
     else:
         plot_data.reset_index(inplace=True, drop=True)
@@ -447,7 +448,7 @@ def create_dataframe(file):
         raise NotImplementedError('Unrecognized file type')
 
 
-def process_data(file):
+def process_data(file, chart_by):
     solves_data, has_dates, timer_type = create_dataframe(file)
 
     if has_dates:
@@ -481,7 +482,7 @@ def process_data(file):
             ['single_cummin', 'mo3_cummin', 'ao5_cummin', 'ao12_cummin',
              'ao50_cummin', 'ao100_cummin', 'ao1000_cummin']].fillna(method='ffill')
 
-    solves_details = get_all_solves_details(solves_data, has_dates)
+    solves_details = get_all_solves_details(solves_data, has_dates, chart_by)
     overall_pbs = get_overall_pbs(solves_data)
     if has_dates:
         solves_by_dates = get_solves_by_dates(solves_data)

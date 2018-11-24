@@ -14,11 +14,23 @@
                 <label for="file" class="h4">Upload a timer backup file for analysis</label>
                 <div class="text-muted">Supported timers:
                     <abbr data-toggle="tooltip" data-placement="bottom" data-html="true"
-                       title="Export/Import > Export ><br/> For backup">TwistyTimer</abbr>,
+                          title="Export/Import > Export ><br/> For backup">TwistyTimer</abbr>,
                     <abbr data-toggle="tooltip" data-placement="bottom" data-html="true"
-                       title="Export > Export to file">cstimer</abbr>
+                          title="Export > Export to file<br/>Note: cstimer data doesn't include dates">cstimer</abbr>
                 </div>
                 <br/>
+                <span class="h6">Chart by </span>
+                <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                    <label class="btn btn-light active">
+                        <input type="radio" name="chart-by" id="chart-by-dates" value="chart-by-dates"
+                               autocomplete="off" checked> Dates
+                    </label>
+                    <label class="btn btn-light">
+                        <input type="radio" name="chart-by" id="chart-by-solve-num" value="chart-by-solve-num"
+                               autocomplete="off"> Solve #
+                    </label>
+                </div>
+                <br/><br/>
                 <input type="file" name="file" id="file" class="form-control-file mx-auto" style="width: 220px;">
             </div>
             <button type="submit" class="btn btn-primary" onclick="loading()">
@@ -98,6 +110,9 @@ function loading() {
         });
         }, 4 * 1000)
 }
+
+
+
 
 
 </script>

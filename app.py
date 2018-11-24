@@ -42,7 +42,8 @@ def index():
             return redirect(request.url)
         if file and allowed_file(file.filename):
             try:
-                solves_details, overall_pbs, solves_by_dates, timer_type, datalen = process_data(file)
+                chart_by = request.form['chart-by']
+                solves_details, overall_pbs, solves_by_dates, timer_type, datalen = process_data(file, chart_by)
                 return render_template("data.html", solves_details=solves_details, overall_pbs=overall_pbs,
                                        solves_by_dates=solves_by_dates, timer_type=timer_type, datalen=datalen)
             except NotImplementedError:
