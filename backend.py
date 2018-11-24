@@ -142,6 +142,13 @@ def get_pb_progression(solves_data, puzzle, category, col_name, has_dates):
     return solves_data_pb
 
 
+def rename_puzzle(puz):
+    if puz in ('222', '333', '444', '555', '666', '777'):
+        return puz[0] + 'x' + puz[0]
+    else:
+        return puz
+
+
 def get_all_solves_details(solves_data, has_dates):
     # generate a nested dict puzzle -> category -> pb progression df
     puzcats = {k: sorted(g['Category'].tolist(), key=lambda s: str(s).casefold())
@@ -159,10 +166,7 @@ def get_all_solves_details(solves_data, has_dates):
             catdict[cat] = pbs_display, get_solves_plot(solves_data, puz, cat, has_dates), get_histograms_plot(
                 solves_data, puz, cat)
 
-        renamed_puz = puz
-        if puz in ('222', '333', '444', '555', '666', '777'):
-            renamed_puz = puz[0] + 'x' + puz[0]
-
+        renamed_puz = rename_puzzle(puz)
         resdict[renamed_puz] = catdict
 
     return resdict
@@ -186,11 +190,7 @@ def get_overall_pbs(solves_data):
         pbs_with_count.rename_axis(None, inplace=True)
     else:
         # rename NNN to NxN for TwistyTimer
-        renamed_puzzles = []
-        for puzzle in pbs_with_count.index.levels[0]:
-            if puzzle in ('222', '333', '444', '555', '666', '777'):
-                puzzle = puzzle[0] + 'x' + puzzle[0]
-            renamed_puzzles.append(puzzle)
+        renamed_puzzles = [rename_puzzle(puz) for puz in pbs_with_count.index.levels[0]]
         pbs_with_count.index = pbs_with_count.index.set_levels(renamed_puzzles, level=0)
 
     return pbs_with_count
@@ -358,6 +358,54 @@ def get_histograms_plot(solves_data, puzzle, category):
     return plot(fig, include_plotlyjs=False, output_type='div')
 
 
+def generate_dates_histogram(solves_data, group_date_str, tickformat, dtick):
+    solves_grouped = solves_data[['Puzzle', 'Category', 'single']].groupby(
+        [solves_data.DatetimeUTC.dt.strftime(group_date_str), solves_data.Puzzle, solves_data.Category])[
+        'Puzzle'].count().rename('#')
+
+    renamed_puzzles = [rename_puzzle(puz) for puz in solves_grouped.index.levels[1]]
+    solves_grouped.index = solves_grouped.index.set_levels(renamed_puzzles, level=1)
+    plot_data = solves_grouped.unstack([1, 2])
+    # noinspection PyUnresolvedReferences
+    plot_data.columns = [' '.join(col).strip() for col in plot_data.columns.values]
+
+    data = []
+    for col in sorted(plot_data.columns, key=lambda s: str(s).casefold()):
+        data.append(go.Bar(
+            x=plot_data.index,
+            y=plot_data[col],
+            name=col
+        ))
+
+    layout = go.Layout(
+        barmode='stack',
+        margin={'l': 50,
+                'r': 50,
+                'b': 75,
+                't': 50,
+                'pad': 4
+                },
+        xaxis={'tickformat': tickformat, 'dtick': dtick},
+        legend={'traceorder': 'normal'}
+    )
+    fig = dict(data=data, layout=layout)
+
+    return plot(fig, include_plotlyjs=False, output_type='div')
+
+
+def get_solves_by_dates(solves_data):
+    resdict = OrderedDict()
+
+    groups = (('Day', '%Y-%m-%d', None, None),
+              ('Month', '%Y-%m', '%b %Y', None),
+              ('Year', '%Y', 'd', 'M1'))
+
+    for group_name, group_date_str, tickformat, dtick in groups:
+        resdict[group_name] = generate_dates_histogram(solves_data, group_date_str, tickformat, dtick)
+
+    return resdict
+
+
 def create_dataframe(file):
     file.seek(0)
     headers = file.readline().decode()
@@ -433,7 +481,18 @@ def process_data(file):
             ['single_cummin', 'mo3_cummin', 'ao5_cummin', 'ao12_cummin',
              'ao50_cummin', 'ao100_cummin', 'ao1000_cummin']].fillna(method='ffill')
 
-    return get_all_solves_details(solves_data, has_dates), get_overall_pbs(solves_data), timer_type, len(solves_data)
+    solves_details = get_all_solves_details(solves_data, has_dates)
+    overall_pbs = get_overall_pbs(solves_data)
+    if has_dates:
+        solves_by_dates = get_solves_by_dates(solves_data)
+    else:
+        solves_by_dates = None
+
+    return solves_details, overall_pbs, solves_by_dates, timer_type, len(solves_data)
 
 # TODO top 20 solves per puz-cat
 # TODO add daily / monthly / yearly number of solves, stacked bar for all together, and legend control
+# TODO timers support requested: block keeper, chaotimer
+# TODO chart toggle date / solve # for xaxis
+# TODO PB histories for aoX - how?
+# TODO show number of subX solves, maybe a cumulative histogram?

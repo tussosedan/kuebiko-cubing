@@ -25,6 +25,14 @@
                                     aria-selected="true">Overall PB Summary</a>
             </li>
 
+            {% if solves_by_dates %}
+            <li class="nav-item"><a id="dates-histogram-tab" href="#dates-histogram" aria-controls="dates-histogram"
+                                    role="tab" data-toggle="tab"
+                                    class="nav-link text-white"
+                                    aria-selected="true">Dates Histogram</a>
+            </li>
+            {% endif %}
+
             <li class="nav-item"><a href="#" class="nav-link"></a>
             </li>
 
@@ -92,6 +100,41 @@
             text-center", justify="center", na_rep='--') | safe }}
         </div>
     </div>
+
+    {% if solves_by_dates %}
+    <div role="tabpanel" class="tab-pane fade"
+         id="dates-histogram"
+         aria-labelledby="dates-histogram-tab">
+
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary justify-content-center inner-navbar"
+             id="inner-navbar-dates-histogram">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="navbar-brand"><b>Dates Histogram by</b></li>
+
+                {% for group_name, plot in solves_by_dates.items() %}
+                <li class="nav-item"><a id="dates-histogram-{{ group_name }}-plot-tab"
+                                        href="#dates-histogram-{{ group_name }}-plot"
+                                        aria-controls="dates-histogram-{{ group_name }}-plot"
+                                        role="tab" data-toggle="tab"
+                                        class="nav-link text-white bg-primary
+                                                {% if loop.index == 2 %} active {% endif %}"
+                                        aria-selected="true">{{ group_name }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </nav>
+
+        <div class="tab-content">
+            {% for group_name, plot in solves_by_dates.items() %}
+            <div role="tabpanel" class="tab-pane fade {% if loop.index == 2 %} show active {% endif %}"
+                 id="dates-histogram-{{ group_name }}-plot"
+                 aria-labelledby="dates-histogram-{{ group_name }}-plot-tab">
+                {{ plot | safe }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 
     {% for puz,cats in solves_details.items() %}
     {% set outerloop = loop %}

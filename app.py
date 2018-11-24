@@ -42,9 +42,9 @@ def index():
             return redirect(request.url)
         if file and allowed_file(file.filename):
             try:
-                solves_details, overall_pbs, timer_type, datalen = process_data(file)
+                solves_details, overall_pbs, solves_by_dates, timer_type, datalen = process_data(file)
                 return render_template("data.html", solves_details=solves_details, overall_pbs=overall_pbs,
-                                       timer_type=timer_type, datalen=datalen)
+                                       solves_by_dates=solves_by_dates, timer_type=timer_type, datalen=datalen)
             except NotImplementedError:
                 flash(Markup('Looks like this file type is not supported yet. '
                              'Please open an issue on the '
