@@ -257,7 +257,7 @@ def get_solves_plot(solves_data, puzzle, category, has_dates):
                 line={'color': colors.get(series, 'black'),
                       'width': 1.3,
                       'dash': 'dash',
-                      'shape': 'vh'}
+                      'shape': 'hv'}
             ))
 
     layout = go.Layout(margin={'l': 50,
