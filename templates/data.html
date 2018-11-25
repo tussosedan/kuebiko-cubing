@@ -21,15 +21,13 @@
 
             <li class="nav-item"><a id="pbs-tab" href="#pbs" aria-controls="pbs"
                                     role="tab" data-toggle="tab"
-                                    class="nav-link text-white"
-                                    aria-selected="true">Overall PB Summary</a>
+                                    class="nav-link text-white">Overall PB Summary</a>
             </li>
 
             {% if solves_by_dates %}
             <li class="nav-item"><a id="dates-histogram-tab" href="#dates-histogram" aria-controls="dates-histogram"
                                     role="tab" data-toggle="tab"
-                                    class="nav-link text-white"
-                                    aria-selected="true">Dates Histogram</a>
+                                    class="nav-link text-white">Dates Histogram</a>
             </li>
             {% endif %}
 
@@ -42,8 +40,7 @@
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle text-white {% if loop.index == 1 %} active {% endif %}"
                    id="puz-{{ puz }}-dropdown" href="#"
-                   role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
-                   aria-selected="true">{{ puz }}</a>
+                   role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{{ puz }}</a>
 
                 <div class="dropdown-menu" aria-labelledby="puz-{{ puz }}-dropdown">
 
@@ -53,8 +50,7 @@
                        href="#puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}"
                        aria-controls="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}"
                        role="tab"
-                       data-toggle="tab"
-                       aria-selected="true">{{ cat }}</a>
+                       data-toggle="tab">{{ cat }}</a>
                     {% endfor %}
 
                 </div>
@@ -117,8 +113,9 @@
                                         aria-controls="dates-histogram-{{ group_name }}-plot"
                                         role="tab" data-toggle="tab"
                                         class="nav-link text-white bg-primary
-                                                {% if loop.index == 2 %} active {% endif %}"
-                                        aria-selected="true">{{ group_name }}</a>
+                                                {% if loop.index == 2 %} active {% endif %}">
+                                            {{ group_name }}
+                                        </a>
                 </li>
                 {% endfor %}
             </ul>
@@ -163,16 +160,14 @@
                                         href="#puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-histogram"
                                         aria-controls="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-histogram"
                                         role="tab" data-toggle="tab"
-                                        class="nav-link text-white bg-primary"
-                                        aria-selected="true">Histogram</a>
+                                        class="nav-link text-white bg-primary">Histogram</a>
                 </li>
 
                 <li class="nav-item"><a id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs-tab"
                                         href="#puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs"
                                         aria-controls="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs"
                                         role="tab" data-toggle="tab"
-                                        class="nav-link text-white bg-primary"
-                                        aria-selected="true">PBs</a>
+                                        class="nav-link text-white bg-primary">PBs</a>
                 </li>
             </ul>
         </nav>
@@ -182,11 +177,42 @@
             <div role="tabpanel" class="tab-pane fade"
                  id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs"
                  aria-labelledby="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs-tab">
-                <div class="container-fluid">
-                    <div class="table-responsive fixed-table-body">
-                        {{ details[0].to_html(classes="table table-bordered table-striped
-                        text-center", justify="center", index=False, na_rep='--') | safe }}
+
+                <nav class="navbar navbar-expand-lg navbar-light bg-light justify-content-center"
+                     id="pbs-navbar">
+                    <ul class="nav nav-pills" role="tablist">
+                        {% for series, pbs in details[0].items() %}
+                        <li class="nav-item"><a id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs-{{ series }}-tab"
+                                                href="#puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs-{{ series }}"
+                                                aria-controls="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs-{{ series }}"
+                                                role="tab" data-toggle="tab"
+                                                class="nav-link
+                                                        {% if loop.index == 1 %} active {% endif %}">
+                                                    {{ series }}
+                                                </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </nav>
+
+                <div class="tab-content">
+                    {% for series, pbs in details[0].items() %}
+                    <div role="tabpanel" class="tab-pane fade {% if loop.index == 1 %} show active {% endif %}"
+                         id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs-{{ series }}"
+                         aria-labelledby="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs-{{ series }}-tab">
+                        <div class="container-fluid">
+                            <div class="table-responsive fixed-table-body">
+                                {{ pbs.to_html(classes="table table-bordered table-striped
+                                    text-center", justify="center", index=False, na_rep='--') | safe }}
+                                {% if pbs|length == 50 %}
+                                    <div class="alert alert-warning text-center" role="alert">
+                                      Showing only up to 50 latest PBs
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
+                    {% endfor %}
                 </div>
             </div>
 

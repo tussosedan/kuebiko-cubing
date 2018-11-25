@@ -136,10 +136,35 @@ def get_pb_progression(solves_data, puzzle, category, col_name, has_dates):
     solves_data_pb.loc[last_index.index, 'PB For # Solves'] = str(
         solves_data_part.iloc[-1]['index'] - last_index.iloc[0]) + ' and counting'
 
-    solves_data_pb['Result'] = solves_data_pb[col_name].apply(sec2dtstr)
+    solves_data_pb['PB ' + col_name] = solves_data_pb[col_name].apply(sec2dtstr)
     solves_data_pb.rename(inplace=True, columns={"index": "Solve #"})
 
     return solves_data_pb
+
+
+def get_all_pb_progressions(solves_data, puzzle, category, has_dates):
+    solves_data_part = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)]
+    res = OrderedDict()
+    for series in 'single', 'mo3', 'ao5', 'ao12', 'ao50', 'ao100', 'ao1000':
+        if not solves_data_part[series].isnull().all():
+            res[series] = get_pb_progression(solves_data, puzzle, category, series, has_dates)
+    return res
+
+
+def generate_pbs_display(pb_progressions, has_dates):
+    res = OrderedDict()
+
+    for series, pbs in pb_progressions.items():
+        pbs = pbs.iloc[::-1]
+        if has_dates:
+            pbs_display = pbs[['PB ' + series, 'Date & Time [UTC]', 'PB For Time', 'Solve #',
+                               'PB For # Solves']][:50]
+        else:
+            pbs_display = pbs[['PB ' + series, 'Solve #', 'PB For # Solves']][:50]
+
+        res[series] = pbs_display
+
+    return res
 
 
 def rename_puzzle(puz):
@@ -158,13 +183,12 @@ def get_all_solves_details(solves_data, has_dates, chart_by):
     for puz, cats in puzcats.items():
         catdict = OrderedDict()
         for cat in cats:
-            pbs = get_pb_progression(solves_data, puz, cat, 'single', has_dates).iloc[::-1]
-            if has_dates:
-                pbs_display = pbs[['Result', 'Date & Time [UTC]', 'PB For Time', 'Solve #', 'PB For # Solves']]
-            else:
-                pbs_display = pbs[['Result', 'Solve #', 'PB For # Solves']]
-            solves_plot = get_solves_plot(solves_data, puz, cat, has_dates, chart_by)
+            pb_progressions = get_all_pb_progressions(solves_data, puz, cat, has_dates)
+            pbs_display = generate_pbs_display(pb_progressions, has_dates)
+
+            solves_plot = get_solves_plot(solves_data, puz, cat, has_dates, chart_by, pb_progressions)
             histograms_plot = get_histograms_plot(solves_data, puz, cat)
+
             catdict[cat] = pbs_display, solves_plot, histograms_plot
 
         renamed_puz = rename_puzzle(puz)
@@ -197,7 +221,7 @@ def get_overall_pbs(solves_data):
     return pbs_with_count
 
 
-def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by):
+def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progressions):
     plot_data = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)]
 
     if chart_by == 'chart-by-solve-num':
@@ -240,7 +264,7 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by):
                       'width': 1.3}
             ))
 
-            pbs = get_pb_progression(solves_data, puzzle, category, series, has_dates)
+            pbs = pb_progressions[series]
 
             if has_dates:
                 pb_plot_x = pbs['Date & Time [UTC]']
@@ -251,7 +275,7 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by):
                 x=pb_plot_x,
                 y=pbs[series].apply(lambda x: to_datetime(x, unit='s')),
                 name='PB ' + series,
-                text=pbs['Result'],
+                text=pbs['PB ' + series],
                 hoverinfo="x+name+text",
                 mode="lines+markers",
                 marker={'size': 4,
@@ -451,6 +475,15 @@ def create_dataframe(file):
         raise NotImplementedError('Unrecognized file type')
 
 
+def drop_all_dnf_categories(solves_data):
+    solves_grouped = solves_data.groupby(['Puzzle', 'Category'])['single']
+    non_dnf = solves_grouped.any()
+    all_dnf = non_dnf[~non_dnf].reset_index()[['Puzzle', 'Category']]
+    solves_grouped_index = solves_data.set_index(['Puzzle', 'Category']).index
+    all_dnf_index = all_dnf.set_index(['Puzzle', 'Category']).index
+    return solves_data[~solves_grouped_index.isin(all_dnf_index)]
+
+
 def process_data(file, chart_by):
     solves_data, has_dates, timer_type = create_dataframe(file)
 
@@ -463,6 +496,8 @@ def process_data(file, chart_by):
                              for row in solves_data[['Penalty', 'TimeCentiSec']].itertuples()]
 
     solves_data['IsDNF'] = [1 if row == 2 else 0 for row in solves_data['Penalty']]
+
+    solves_data = drop_all_dnf_categories(solves_data)
 
     for idx, puzzle, category in solves_data[['Puzzle', 'Category']].drop_duplicates().itertuples():
         for ao_len in (3, 5, 12, 50, 100, 1000):
@@ -494,7 +529,6 @@ def process_data(file, chart_by):
 
     return solves_details, overall_pbs, solves_by_dates, timer_type, len(solves_data)
 
-# TODO top 20 solves per puz-cat
+# TODO top 20 solves per puz-cat. also per aoX?
 # TODO timers support requested: block keeper, chaotimer
-# TODO PB histories for aoX - how? last 50 + truncation message? how to display?
-# TODO show number of subX solves, maybe a cumulative histogram?
+# TODO show number of subX solves? maybe a cumulative histogram?
