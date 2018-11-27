@@ -16,23 +16,20 @@
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav nav">
 
-            <li class="nav-item"><a href="#" class="nav-link"></a>
-            </li>
-
             <li class="nav-item"><a id="pbs-tab" href="#pbs" aria-controls="pbs"
                                     role="tab" data-toggle="tab"
                                     class="nav-link text-white">Overall PB Summary</a>
             </li>
 
             {% if solves_by_dates %}
+            <li class="nav-item nav-link text-white d-none d-lg-block">|</li>
             <li class="nav-item"><a id="dates-histogram-tab" href="#dates-histogram" aria-controls="dates-histogram"
                                     role="tab" data-toggle="tab"
                                     class="nav-link text-white">Dates Histogram</a>
             </li>
             {% endif %}
 
-            <li class="nav-item"><a href="#" class="nav-link"></a>
-            </li>
+            <li class="nav-item nav-link text-white d-none d-lg-block">|</li>
 
             {% for puz,cats in solves_details.items() %}
             {% set outerloop = loop %}
@@ -57,26 +54,24 @@
             </li>
             {% endfor %}
 
-            <li class="nav-item">
-                <a href="{{url_for('index')}}" class="nav-link text-white"></a>
-            </li>
+            <li class="nav-item nav-link text-white d-none d-lg-block">|</li>
             <li class="nav-item">
                 <a href="{{url_for('index')}}" class="nav-link text-white">Analyze another file</a>
             </li>
 
-            <li class="nav-item">
-                <a href="{{url_for('index')}}" class="nav-link text-white"></a>
-            </li>
+            <li class="nav-item nav-link text-white d-none d-lg-block">|</li>
             <li class="nav-item">
                 <a class="nav-link text-white" target="_blank" rel="noopener noreferrer"
                    href="https://github.com/tussosedan/kuebiko-cubing">GitHub</a>
             </li>
+            <li class="nav-item nav-link text-white d-none d-lg-block">|</li>
+            <li class="nav-item">
+                <a class="nav-link text-white" target="_blank" rel="noopener noreferrer"
+                   href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=HPNNZV28DEJ3U&source=url">
+                    Donate</a>
+            </li>
         </ul>
-
-
     </div>
-
-
 </nav>
 
 
