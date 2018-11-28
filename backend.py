@@ -266,10 +266,18 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
 
             pbs = pb_progressions[series]
 
+            # add an extra point for continuing the PB line until the last solve
+            plot_last_index = plot_data.tail(1).index.values[0]
+            pbs.loc[plot_last_index, [series, 'PB ' + series, 'Solve #']] = [pbs.iloc[-1][series], '', len(plot_data)]
+
             if has_dates:
+                pbs.loc[plot_last_index, 'Date & Time [UTC]'] = plot_data.iloc[-1]['DatetimeUTC']
                 pb_plot_x = pbs['Date & Time [UTC]']
             else:
                 pb_plot_x = pbs['Solve #']
+
+            marker_sizes = [4 for _ in range(len(pbs))]
+            marker_sizes[-1] = 0
 
             data.append(go.Scatter(
                 x=pb_plot_x,
@@ -278,7 +286,7 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
                 text=pbs['PB ' + series],
                 hoverinfo="x+name+text",
                 mode="lines+markers",
-                marker={'size': 4,
+                marker={'size': marker_sizes,
                         'color': colors.get(series, 'black')},
                 visible='legendonly',
                 # fill='tozeroy',
@@ -535,7 +543,5 @@ def process_data(file, chart_by):
 
     return solves_details, overall_pbs, solves_by_dates, timer_type, len(solves_data)
 
-# TODO scrollZoom config, also test autoresize and responsive
-#   https://github.com/plotly/plotly.js/blob/master/src/plot_api/plot_config.js
 # TODO top 20 solves per puz-cat. also per aoX?
 # TODO timers support requested: block keeper, chaotimer
