@@ -305,7 +305,9 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
     if len(fig['data']) >= 5:
         fig['data'][-4].visible = True
 
-    return plot(fig, include_plotlyjs=False, output_type='div')
+    config = {'scrollZoom': True}
+
+    return plot(fig, include_plotlyjs=False, output_type='div', config=config)
 
 
 def generate_histogram(plot_data_raw, name):
@@ -383,7 +385,9 @@ def get_histograms_plot(solves_data, puzzle, category):
 
     fig = dict(data=data, layout=layout)
 
-    return plot(fig, include_plotlyjs=False, output_type='div')
+    config = {'scrollZoom': True}
+
+    return plot(fig, include_plotlyjs=False, output_type='div', config=config)
 
 
 def generate_dates_histogram(solves_data, group_date_str, tickformat, dtick):
@@ -418,7 +422,9 @@ def generate_dates_histogram(solves_data, group_date_str, tickformat, dtick):
     )
     fig = dict(data=data, layout=layout)
 
-    return plot(fig, include_plotlyjs=False, output_type='div')
+    config = {'scrollZoom': True}
+
+    return plot(fig, include_plotlyjs=False, output_type='div', config=config)
 
 
 def get_solves_by_dates(solves_data):
@@ -529,6 +535,7 @@ def process_data(file, chart_by):
 
     return solves_details, overall_pbs, solves_by_dates, timer_type, len(solves_data)
 
+# TODO scrollZoom config, also test autoresize and responsive
+#   https://github.com/plotly/plotly.js/blob/master/src/plot_api/plot_config.js
 # TODO top 20 solves per puz-cat. also per aoX?
 # TODO timers support requested: block keeper, chaotimer
-# TODO show number of subX solves? maybe a cumulative histogram?
