@@ -267,7 +267,7 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
             pbs = pb_progressions[series]
 
             # add an extra point for continuing the PB line until the last solve
-            plot_last_index = plot_data.tail(1).index.values[0]
+            plot_last_index = plot_data.index.values[-1]
             pbs.loc[plot_last_index, [series, 'PB ' + series, 'Solve #']] = [pbs.iloc[-1][series], '', len(plot_data)]
 
             if has_dates:
@@ -543,5 +543,7 @@ def process_data(file, chart_by):
 
     return solves_details, overall_pbs, solves_by_dates, timer_type, len(solves_data)
 
+# TODO local TZ
+# TODO consistency score = mean / stdev ( = 1/CV)
 # TODO top 20 solves per puz-cat. also per aoX?
 # TODO timers support requested: block keeper, chaotimer
