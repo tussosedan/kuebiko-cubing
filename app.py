@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, redirect, flash, Markup
 from backend import process_data
-import json
 import os
 import traceback
 import time
@@ -40,6 +39,7 @@ def index():
                          ' and upload the file there.'))
             return redirect(request.url)
         if file and allowed_file(file.filename):
+            # noinspection PyBroadException
             try:
                 chart_by = request.form.get('chart-by', 'chart-by-dates')
                 timezone = request.form.get('tz', 'UTC')
@@ -53,7 +53,7 @@ def index():
                              '<a href="https://github.com/tussosedan/kuebiko-cubing/issues">github page</a>'
                              ' and upload the file there.'))
                 return redirect(request.url)
-            except (json.decoder.JSONDecodeError, ValueError, KeyError, IndexError):
+            except Exception:
                 flash(Markup('Something went wrong while reading the file. '
                              'Please open an issue on the '
                              '<a href="https://github.com/tussosedan/kuebiko-cubing/issues">github page</a>'
