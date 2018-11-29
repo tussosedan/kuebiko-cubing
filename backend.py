@@ -177,6 +177,7 @@ def generate_pbs_display(pb_progressions, has_dates):
 
 
 def rename_puzzle(puz):
+    puz = str(puz)
     if puz in ('222', '333', '444', '555', '666', '777'):
         return puz[0] + 'x' + puz[0]
     else:
