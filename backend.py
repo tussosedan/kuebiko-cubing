@@ -471,9 +471,6 @@ def create_dataframe(file, timezone):
 
         data = df.rename_axis('MyIdx').sort_values(['Date(millis)', 'MyIdx'])
 
-        # timezone could be a tz name string, or an offset in minutes
-        if represents_int(timezone):
-            timezone = int(timezone) * 60  # need it in seconds for tz_convert
         data['SolveDatetime'] = to_datetime(data['Date(millis)'], unit='ms').astype('datetime64[s]').dt.tz_localize(
             'UTC').dt.tz_convert(timezone).dt.tz_localize(None)
 
@@ -519,6 +516,10 @@ def drop_all_dnf_categories(solves_data):
 
 
 def process_data(file, chart_by, timezone):
+    # timezone could be a tz name string, or an offset in minutes
+    if represents_int(timezone):
+        timezone = int(timezone) * 60  # need it in seconds for tz_convert
+
     solves_data, has_dates, timer_type = create_dataframe(file, timezone)
 
     solves_data['TimeCentiSec'] = (solves_data['Time(millis)'] / 10).astype(int)
@@ -562,4 +563,4 @@ def process_data(file, chart_by, timezone):
 
 # TODO consistency score = mean / stdev ( = 1/CV)
 # TODO top 20 solves per puz-cat. also per aoX?
-# TODO timers support requested: block keeper, chaotimer, zyxtimer (plus textbox input?)
+# TODO timers support requested: block keeper, chaotimer (no export?!), zyxtimer (plus textbox input)
