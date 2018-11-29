@@ -32,6 +32,7 @@
                                autocomplete="off"> Solve #
                     </label>
                 </div>
+                <input type="hidden" id="tz" name="tz" value="" />
                 <br/><br/>
                 <input type="file" name="file" id="file" class="form-control-file mx-auto" style="width: 220px;">
             </div>
@@ -51,9 +52,16 @@
 </div>
 
 <script type="application/javascript">
-$(function () {
-  $('[data-toggle="tooltip"]').tooltip()
-})
+window.onload = function () {
+        $('[data-toggle="tooltip"]').tooltip();
+
+        tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (tz == undefined) {
+            tz = new Date().getTimezoneOffset() * -1;
+        }
+        document.getElementById('tz').value = tz;
+    }
+
 
 function shuffle(array) {
     var i = array.length,
@@ -73,6 +81,7 @@ function shuffle(array) {
 
     return array;
 }
+
 
 function loading() {
     $('#content').hide();
@@ -98,7 +107,8 @@ function loading() {
 "Using only hand scrambles",
 "Breaking in a 1x1",
 "Restickering a 17x17",
-"Solving XXCross every time"
+"Solving XXCross every time",
+"Generating memes"
                      ];
 
     var randText = shuffle(loadingText);
@@ -112,9 +122,6 @@ function loading() {
         });
         }, 4 * 1000)
 }
-
-
-
 
 
 </script>

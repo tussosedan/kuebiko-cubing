@@ -6,7 +6,6 @@ import traceback
 import time
 from werkzeug.utils import secure_filename
 
-
 ALLOWED_EXTENSIONS = {'txt'}
 UPLOAD_FOLDER = r'C:\uploads'
 
@@ -42,8 +41,10 @@ def index():
             return redirect(request.url)
         if file and allowed_file(file.filename):
             try:
-                chart_by = request.form['chart-by']
-                solves_details, overall_pbs, solves_by_dates, timer_type, datalen = process_data(file, chart_by)
+                chart_by = request.form.get('chart-by', 'chart-by-dates')
+                timezone = request.form.get('tz', 'UTC')
+                solves_details, overall_pbs, solves_by_dates, timer_type, datalen = process_data(file, chart_by,
+                                                                                                 timezone)
                 return render_template("data.html", solves_details=solves_details, overall_pbs=overall_pbs,
                                        solves_by_dates=solves_by_dates, timer_type=timer_type, datalen=datalen)
             except NotImplementedError:

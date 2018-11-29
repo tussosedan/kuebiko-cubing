@@ -3,7 +3,7 @@ from math import floor, ceil, isnan
 
 from numba import jit
 from numpy import sort, repeat, NaN, array, all
-from pandas import read_csv, to_datetime, concat, notnull, DataFrame, cut
+from pandas import read_csv, to_datetime, concat, notnull, DataFrame, Series, cut
 
 from plotly.offline import plot
 import plotly.graph_objs as go
@@ -105,7 +105,15 @@ def sec2dt(seconds):
     return s
 
 
-def get_pb_progression(solves_data, puzzle, category, col_name, has_dates):
+def represents_int(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+
+def get_pb_progression(solves_data, puzzle, category, col_name, has_dates, timezone):
     solves_data_part = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)]
     # create a column for solve num
     solves_data_part.reset_index(inplace=True, drop=True)
@@ -115,15 +123,16 @@ def get_pb_progression(solves_data, puzzle, category, col_name, has_dates):
     if has_dates:
         solves_data_pb = solves_data_part[(solves_data_part[col_name + '_cummin'].diff() != 0)
                                           & (solves_data_part[col_name + '_cummin'].notnull())][
-            ['index', 'DatetimeUTC', col_name]]
+            ['index', 'SolveDatetime', col_name]]
 
-        solves_data_pb['PB For Time'] = solves_data_pb['DatetimeUTC'].diff(periods=-1) * -1
+        solves_data_pb['PB For Time'] = solves_data_pb['SolveDatetime'].diff(periods=-1) * -1
 
-        last_date = solves_data_pb.tail(1)['DatetimeUTC']
-        solves_data_pb.loc[last_date.index, 'PB For Time'] = str(
-            datetime.now().replace(microsecond=0) - last_date.iloc[0]) + ' and counting'
+        last_date = solves_data_pb.tail(1)['SolveDatetime']
+        last_date_value = Series(datetime.utcnow().replace(microsecond=0)).dt.tz_localize(
+            'UTC').dt.tz_convert(timezone).dt.tz_localize(None).iloc[0]
+        solves_data_pb.loc[last_date.index, 'PB For Time'] = str(last_date_value - last_date.iloc[0]) + ' and counting'
 
-        solves_data_pb.rename(inplace=True, columns={"DatetimeUTC": "Date & Time [UTC]"})
+        solves_data_pb.rename(inplace=True, columns={"SolveDatetime": "Date & Time"})
     else:
         solves_data_pb = solves_data_part[(solves_data_part[col_name + '_cummin'].diff() != 0)
                                           & (solves_data_part[col_name + '_cummin'].notnull())][
@@ -142,12 +151,12 @@ def get_pb_progression(solves_data, puzzle, category, col_name, has_dates):
     return solves_data_pb
 
 
-def get_all_pb_progressions(solves_data, puzzle, category, has_dates):
+def get_all_pb_progressions(solves_data, puzzle, category, has_dates, timezone):
     solves_data_part = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)]
     res = OrderedDict()
     for series in 'single', 'mo3', 'ao5', 'ao12', 'ao50', 'ao100', 'ao1000':
         if not solves_data_part[series].isnull().all():
-            res[series] = get_pb_progression(solves_data, puzzle, category, series, has_dates)
+            res[series] = get_pb_progression(solves_data, puzzle, category, series, has_dates, timezone)
     return res
 
 
@@ -157,7 +166,7 @@ def generate_pbs_display(pb_progressions, has_dates):
     for series, pbs in pb_progressions.items():
         pbs = pbs.iloc[::-1]
         if has_dates:
-            pbs_display = pbs[['PB ' + series, 'Date & Time [UTC]', 'PB For Time', 'Solve #',
+            pbs_display = pbs[['PB ' + series, 'Date & Time', 'PB For Time', 'Solve #',
                                'PB For # Solves']][:50]
         else:
             pbs_display = pbs[['PB ' + series, 'Solve #', 'PB For # Solves']][:50]
@@ -174,7 +183,7 @@ def rename_puzzle(puz):
         return puz
 
 
-def get_all_solves_details(solves_data, has_dates, chart_by):
+def get_all_solves_details(solves_data, has_dates, timezone, chart_by):
     # generate a nested dict puzzle -> category -> pb progression df
     puzcats = {k: sorted(g['Category'].tolist(), key=lambda s: str(s).casefold())
                for k, g in solves_data[['Puzzle', 'Category']].drop_duplicates().groupby('Puzzle')}
@@ -183,7 +192,7 @@ def get_all_solves_details(solves_data, has_dates, chart_by):
     for puz, cats in puzcats.items():
         catdict = OrderedDict()
         for cat in cats:
-            pb_progressions = get_all_pb_progressions(solves_data, puz, cat, has_dates)
+            pb_progressions = get_all_pb_progressions(solves_data, puz, cat, has_dates, timezone)
             pbs_display = generate_pbs_display(pb_progressions, has_dates)
 
             solves_plot = get_solves_plot(solves_data, puz, cat, has_dates, chart_by, pb_progressions)
@@ -228,7 +237,7 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
         has_dates = False
 
     if has_dates:
-        data_plot_x = plot_data['DatetimeUTC']
+        data_plot_x = plot_data['SolveDatetime']
     else:
         plot_data.reset_index(inplace=True, drop=True)
         data_plot_x = plot_data.index + 1
@@ -271,8 +280,8 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
             pbs.loc[plot_last_index, [series, 'PB ' + series, 'Solve #']] = [pbs.iloc[-1][series], '', len(plot_data)]
 
             if has_dates:
-                pbs.loc[plot_last_index, 'Date & Time [UTC]'] = plot_data.iloc[-1]['DatetimeUTC']
-                pb_plot_x = pbs['Date & Time [UTC]']
+                pbs.loc[plot_last_index, 'Date & Time'] = plot_data.iloc[-1]['SolveDatetime']
+                pb_plot_x = pbs['Date & Time']
             else:
                 pb_plot_x = pbs['Solve #']
 
@@ -400,7 +409,7 @@ def get_histograms_plot(solves_data, puzzle, category):
 
 def generate_dates_histogram(solves_data, group_date_str, tickformat, dtick):
     solves_grouped = solves_data[['Puzzle', 'Category', 'single']].groupby(
-        [solves_data.DatetimeUTC.dt.strftime(group_date_str), solves_data.Puzzle, solves_data.Category])[
+        [solves_data.SolveDatetime.dt.strftime(group_date_str), solves_data.Puzzle, solves_data.Category])[
         'Puzzle'].count().rename('#')
 
     renamed_puzzles = [rename_puzzle(puz) for puz in solves_grouped.index.levels[1]]
@@ -448,7 +457,7 @@ def get_solves_by_dates(solves_data):
     return resdict
 
 
-def create_dataframe(file):
+def create_dataframe(file, timezone):
     file.seek(0)
     headers = file.readline().decode()
     file.seek(0)
@@ -459,11 +468,21 @@ def create_dataframe(file):
         df = read_csv(file.stream, sep=';', skiprows=1, header=None)
         df.columns = headers.strip().split(sep=',')
         has_dates = True
-        return df.rename_axis('MyIdx').sort_values(['Date(millis)', 'MyIdx']), has_dates, timer_type
+
+        data = df.rename_axis('MyIdx').sort_values(['Date(millis)', 'MyIdx'])
+
+        # timezone could be a tz name string, or an offset in minutes
+        if represents_int(timezone):
+            timezone = int(timezone) * 60  # need it in seconds for tz_convert
+        data['SolveDatetime'] = to_datetime(data['Date(millis)'], unit='ms').astype('datetime64[s]').dt.tz_localize(
+            'UTC').dt.tz_convert(timezone).dt.tz_localize(None)
+
+        return data, has_dates, timer_type
     elif headers.startswith('{"session1"'):
         # cstimer
         timer_type = 'cstimer'
         data = json.load(file)
+
         solves = []
         for session_id, session_values in json.loads(json.loads(data['properties'])['sessionData']).items():
             for times, scramble, notes in json.loads(data['session' + session_id]):
@@ -484,6 +503,7 @@ def create_dataframe(file):
         df = DataFrame(data=solves, columns=['Category', 'Time(millis)', 'Penalty'])
         has_dates = False
         df['Puzzle'] = 'Sessions'
+
         return df, has_dates, timer_type
     else:
         raise NotImplementedError('Unrecognized file type')
@@ -498,11 +518,8 @@ def drop_all_dnf_categories(solves_data):
     return solves_data[~solves_grouped_index.isin(all_dnf_index)]
 
 
-def process_data(file, chart_by):
-    solves_data, has_dates, timer_type = create_dataframe(file)
-
-    if has_dates:
-        solves_data['DatetimeUTC'] = to_datetime(solves_data['Date(millis)'], unit='ms').astype('datetime64[s]')
+def process_data(file, chart_by, timezone):
+    solves_data, has_dates, timer_type = create_dataframe(file, timezone)
 
     solves_data['TimeCentiSec'] = (solves_data['Time(millis)'] / 10).astype(int)
 
@@ -534,7 +551,7 @@ def process_data(file, chart_by):
             ['single_cummin', 'mo3_cummin', 'ao5_cummin', 'ao12_cummin',
              'ao50_cummin', 'ao100_cummin', 'ao1000_cummin']].fillna(method='ffill')
 
-    solves_details = get_all_solves_details(solves_data, has_dates, chart_by)
+    solves_details = get_all_solves_details(solves_data, has_dates, timezone, chart_by)
     overall_pbs = get_overall_pbs(solves_data)
     if has_dates:
         solves_by_dates = get_solves_by_dates(solves_data)
@@ -543,7 +560,6 @@ def process_data(file, chart_by):
 
     return solves_details, overall_pbs, solves_by_dates, timer_type, len(solves_data)
 
-# TODO local TZ
 # TODO consistency score = mean / stdev ( = 1/CV)
 # TODO top 20 solves per puz-cat. also per aoX?
-# TODO timers support requested: block keeper, chaotimer
+# TODO timers support requested: block keeper, chaotimer, zyxtimer (plus textbox input?)
