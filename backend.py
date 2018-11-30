@@ -176,6 +176,36 @@ def generate_pbs_display(pb_progressions, has_dates):
     return res
 
 
+def get_top_solves(solves_data_part, col_name, top_n, has_dates):
+    if has_dates:
+        column_list = [col_name, 'Date & Time', 'Solve #']
+    else:
+        column_list = [col_name, 'Solve #']
+
+    return solves_data_part[solves_data_part['Penalty'] != 2][column_list].sort_values([col_name, 'Solve #']).head(
+        top_n)
+
+
+def get_all_top_solves(solves_data, puzzle, category, has_dates):
+    top_n = 50
+
+    solves_data_part = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)].copy(
+        deep=True)
+    # create a column for solve num
+    solves_data_part.reset_index(inplace=True, drop=True)
+    solves_data_part.index += 1
+    solves_data_part.reset_index(inplace=True, )
+    solves_data_part.rename(inplace=True, columns={"index": "Solve #"})
+    if has_dates:
+        solves_data_part.rename(inplace=True, columns={"SolveDatetime": "Date & Time"})
+
+    res = OrderedDict()
+    for series in 'single', 'mo3', 'ao5', 'ao12', 'ao50', 'ao100', 'ao1000':
+        if not solves_data_part[series].isnull().all():
+            res[series] = get_top_solves(solves_data_part, series, top_n, has_dates)
+    return res
+
+
 def rename_puzzle(puz):
     puz = str(puz)
     if puz in ('222', '333', '444', '555', '666', '777'):
@@ -196,10 +226,12 @@ def get_all_solves_details(solves_data, has_dates, timezone, chart_by):
             pb_progressions = get_all_pb_progressions(solves_data, puz, cat, has_dates, timezone)
             pbs_display = generate_pbs_display(pb_progressions, has_dates)
 
+            top_solves = get_all_top_solves(solves_data, puz, cat, has_dates)
+
             solves_plot = get_solves_plot(solves_data, puz, cat, has_dates, chart_by, pb_progressions)
             histograms_plot = get_histograms_plot(solves_data, puz, cat)
 
-            catdict[cat] = pbs_display, solves_plot, histograms_plot
+            catdict[cat] = pbs_display, solves_plot, histograms_plot, top_solves
 
         renamed_puz = rename_puzzle(puz)
         resdict[renamed_puz] = catdict
@@ -562,6 +594,6 @@ def process_data(file, chart_by, timezone):
 
     return solves_details, overall_pbs, solves_by_dates, timer_type, len(solves_data)
 
-# TODO consistency score = mean / stdev ( = 1/CV)
-# TODO top 20 solves per puz-cat. also per aoX?
+# TODO puz-cat tabs prevent second row on mobile. collapse? images?
 # TODO timers support requested: block keeper, chaotimer (no export?!), zyxtimer (plus textbox input)
+# TODO add to histogram: consistency score = mean / stdev ( = 1/CV), also show relevant aoX

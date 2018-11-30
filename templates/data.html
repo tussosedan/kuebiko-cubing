@@ -164,6 +164,14 @@
                                         role="tab" data-toggle="tab"
                                         class="nav-link text-white bg-primary">PBs</a>
                 </li>
+
+                <li class="nav-item"><a id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-topn-tab"
+                                        href="#puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-topn"
+                                        aria-controls="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-topn"
+                                        role="tab" data-toggle="tab"
+                                        class="nav-link text-white bg-primary">Top 50</a>
+                </li>
+
             </ul>
         </nav>
 
@@ -223,6 +231,42 @@
                 {{ details[2] | safe }}
             </div>
 
+            <div role="tabpanel" class="tab-pane fade"
+                 id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-topn"
+                 aria-labelledby="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-topn-tab">
+
+                <nav class="navbar navbar-expand-lg navbar-light bg-light justify-content-center"
+                     id="topn-navbar">
+                    <ul class="nav nav-pills" role="tablist">
+                        {% for series, topn in details[0].items() %}
+                        <li class="nav-item"><a id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-topn-{{ series }}-tab"
+                                                href="#puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-topn-{{ series }}"
+                                                aria-controls="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-topn-{{ series }}"
+                                                role="tab" data-toggle="tab"
+                                                class="nav-link
+                                                        {% if loop.index == 1 %} active {% endif %}">
+                                                    {{ series }}
+                                                </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </nav>
+
+                <div class="tab-content">
+                    {% for series, topn in details[3].items() %}
+                    <div role="tabpanel" class="tab-pane fade {% if loop.index == 1 %} show active {% endif %}"
+                         id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-topn-{{ series }}"
+                         aria-labelledby="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-topn-{{ series }}-tab">
+                        <div class="container-fluid">
+                            <div class="table-responsive fixed-table-body">
+                                {{ topn.to_html(classes="table table-bordered table-striped
+                                    text-center", justify="center", index=False, na_rep='--') | safe }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
 
 
