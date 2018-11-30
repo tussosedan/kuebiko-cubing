@@ -301,10 +301,15 @@ function resizePlotsHidden() {
 
 
 function resizePlotsAll() {
-    var myWidth = window.innerWidth;
-    var myHeight = window.innerHeight - $("#main-navbar").outerHeight() - ($(".inner-navbar:visible").first().outerHeight() || 58);
+    var myWidth = parseInt($("#main-navbar").outerWidth());
+    var calcInnerHeight = parseInt(parseInt($("#main-navbar").outerWidth()) / window.innerWidth * window.innerHeight);
+    var myHeight = calcInnerHeight - $("#main-navbar").outerHeight() - ($(".inner-navbar:visible").first().outerHeight() || 58);
 
-    $(".plotly-graph-div").each(function(){
+    $(".plotly-graph-div:visible").each(function(){
+        Plotly.relayout(this, {width:myWidth, height:myHeight});
+    });
+
+    $(".plotly-graph-div").not(":visible").each(function(){
         Plotly.relayout(this, {width:myWidth, height:myHeight});
     });
 
@@ -313,9 +318,10 @@ function resizePlotsAll() {
 
 
 function resizePlots() {
-    setTimeout(function () { resizePlotVisible(); }, 0);
-    setTimeout(function () { resizePlotsHidden(); }, 500);
-    //setTimeout(function () { resizePlotsAll(); }, 0);
+    //setTimeout(function () { resizePlotVisible(); }, 500);
+    //setTimeout(function () { resizePlotsHidden(); }, 1000);
+    //setTimeout(function () { resizePlotsAll(); }, 2000);
+    resizePlotsAll();
 }
 
 
