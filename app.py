@@ -5,7 +5,7 @@ import traceback
 import time
 from werkzeug.utils import secure_filename
 
-ALLOWED_EXTENSIONS = {'txt'}
+ALLOWED_EXTENSIONS = {'txt', 'json'}
 UPLOAD_FOLDER = r'C:\uploads'
 
 app = Flask(__name__)
