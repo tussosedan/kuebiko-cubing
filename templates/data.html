@@ -292,7 +292,8 @@ function resizePlotVisible() {
 
 function resizePlotsHidden() {
     var myWidth = window.innerWidth;
-    var myHeight = window.innerHeight - $("#main-navbar").outerHeight() - ($(".inner-navbar:visible").first().outerHeight() || 58);
+    var myHeight = window.innerHeight - $("#main-navbar").outerHeight() -
+        ($(".inner-navbar:visible").first().outerHeight() || 58);
 
     $(".plotly-graph-div").not(":visible").each(function(){
         Plotly.relayout(this, {width:myWidth, height:myHeight});
@@ -303,7 +304,8 @@ function resizePlotsHidden() {
 function resizePlotsAll() {
     var myWidth = parseInt($("#main-navbar").outerWidth());
     var calcInnerHeight = parseInt(parseInt($("#main-navbar").outerWidth()) / window.innerWidth * window.innerHeight);
-    var myHeight = calcInnerHeight - $("#main-navbar").outerHeight() - ($(".inner-navbar:visible").first().outerHeight() || 58);
+    var myHeight = calcInnerHeight - $("#main-navbar").outerHeight() -
+        ($(".inner-navbar:visible").first().outerHeight() || original_inner_navbar_height);
 
     $(".plotly-graph-div:visible").each(function(){
         Plotly.relayout(this, {width:myWidth, height:myHeight});
@@ -324,8 +326,9 @@ function resizePlots() {
     resizePlotsAll();
 }
 
-
+var original_inner_navbar_height;
 window.onload = function () {
+        original_inner_navbar_height = $(".inner-navbar:visible").first().outerHeight();
         resizePlots();
         gtag('event', 'finish_loading_file', {
                   'event_category': '{{ timer_type }}',
@@ -335,15 +338,19 @@ window.onload = function () {
 
 
 // resize handling
+var width = $(window).width(), height = $(window).height();
 var rtime;
 var timeout = false;
 var delta = 250;
 $(window).resize(function() {
-    $('#loading').show();
-    rtime = new Date();
-    if (timeout === false) {
-        timeout = true;
-        setTimeout(resizeend, delta);
+    if ($(window).width() != width || $(window).height() != height) {
+        width = $(window).width(); height = $(window).height();
+        $('#loading').show();
+        rtime = new Date();
+        if (timeout === false) {
+            timeout = true;
+            setTimeout(resizeend, delta);
+        }
     }
 });
 
