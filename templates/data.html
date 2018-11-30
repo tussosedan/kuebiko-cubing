@@ -36,16 +36,16 @@
 
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle text-white {% if loop.index == 1 %} active {% endif %}"
-                   id="puz-{{ puz }}-dropdown" href="#"
+                   id="puz-{{ puz|replace(' ','-') }}-dropdown" href="#"
                    role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{{ puz }}</a>
 
-                <div class="dropdown-menu" aria-labelledby="puz-{{ puz }}-dropdown">
+                <div class="dropdown-menu" aria-labelledby="puz-{{ puz|replace(' ','-') }}-dropdown">
 
                     {% for cat,details in cats.items() %}
                     <a class="dropdown-item {% if outerloop.index == 1 and loop.index == 1 %} active {% endif %}"
-                       id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-tab"
-                       href="#puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}"
-                       aria-controls="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}"
+                       id="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-tab"
+                       href="#puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}"
+                       aria-controls="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}"
                        role="tab"
                        data-toggle="tab">{{ cat }}</a>
                     {% endfor %}
@@ -109,8 +109,8 @@
                                         role="tab" data-toggle="tab"
                                         class="nav-link text-white bg-primary
                                                 {% if loop.index == 2 %} active {% endif %}">
-                                            {{ group_name }}
-                                        </a>
+                    {{ group_name }}
+                </a>
                 </li>
                 {% endfor %}
             </ul>
@@ -133,8 +133,8 @@
     {% for cat,details in cats.items() %}
     <div role="tabpanel"
          class="tab-pane fade {% if outerloop.index == 1 and loop.index == 1 %} show active {% endif %}"
-         id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}"
-         aria-labelledby="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-tab">
+         id="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}"
+         aria-labelledby="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-tab">
 
 
         <!-- Per-category Tabs -->
@@ -143,31 +143,31 @@
             <ul class="nav nav-tabs" role="tablist">
                 <li class="navbar-brand"><b>{% if puz != 'Sessions' %}{{ puz }} - {% endif %}{{ cat }}</b></li>
 
-                <li class="nav-item"><a id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-plot-tab"
-                                        href="#puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-plot"
-                                        aria-controls="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-plot"
+                <li class="nav-item"><a id="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-plot-tab"
+                                        href="#puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-plot"
+                                        aria-controls="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-plot"
                                         role="tab" data-toggle="tab"
                                         class="nav-link active text-white bg-primary"
                                         aria-selected="true">Chart</a>
                 </li>
 
-                <li class="nav-item"><a id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-histogram-tab"
-                                        href="#puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-histogram"
-                                        aria-controls="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-histogram"
+                <li class="nav-item"><a id="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-histogram-tab"
+                                        href="#puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-histogram"
+                                        aria-controls="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-histogram"
                                         role="tab" data-toggle="tab"
                                         class="nav-link text-white bg-primary">Histogram</a>
                 </li>
 
-                <li class="nav-item"><a id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs-tab"
-                                        href="#puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs"
-                                        aria-controls="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs"
+                <li class="nav-item"><a id="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-pbs-tab"
+                                        href="#puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-pbs"
+                                        aria-controls="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-pbs"
                                         role="tab" data-toggle="tab"
                                         class="nav-link text-white bg-primary">PBs</a>
                 </li>
 
-                <li class="nav-item"><a id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-topn-tab"
-                                        href="#puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-topn"
-                                        aria-controls="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-topn"
+                <li class="nav-item"><a id="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-topn-tab"
+                                        href="#puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-topn"
+                                        aria-controls="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-topn"
                                         role="tab" data-toggle="tab"
                                         class="nav-link text-white bg-primary">Top 50</a>
                 </li>
@@ -178,21 +178,22 @@
         <!-- Per Category Tab panes -->
         <div class="tab-content">
             <div role="tabpanel" class="tab-pane fade"
-                 id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs"
-                 aria-labelledby="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs-tab">
+                 id="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-pbs"
+                 aria-labelledby="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-pbs-tab">
 
                 <nav class="navbar navbar-expand-lg navbar-light bg-light justify-content-center"
                      id="pbs-navbar">
                     <ul class="nav nav-pills" role="tablist">
                         {% for series, pbs in details[0].items() %}
-                        <li class="nav-item"><a id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs-{{ series }}-tab"
-                                                href="#puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs-{{ series }}"
-                                                aria-controls="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs-{{ series }}"
-                                                role="tab" data-toggle="tab"
-                                                class="nav-link
+                        <li class="nav-item"><a
+                                id="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-pbs-{{ series }}-tab"
+                                href="#puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-pbs-{{ series }}"
+                                aria-controls="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-pbs-{{ series }}"
+                                role="tab" data-toggle="tab"
+                                class="nav-link
                                                         {% if loop.index == 1 %} active {% endif %}">
-                                                    {{ series }}
-                                                </a>
+                            {{ series }}
+                        </a>
                         </li>
                         {% endfor %}
                     </ul>
@@ -201,16 +202,16 @@
                 <div class="tab-content">
                     {% for series, pbs in details[0].items() %}
                     <div role="tabpanel" class="tab-pane fade {% if loop.index == 1 %} show active {% endif %}"
-                         id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs-{{ series }}"
-                         aria-labelledby="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-pbs-{{ series }}-tab">
+                         id="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-pbs-{{ series }}"
+                         aria-labelledby="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-pbs-{{ series }}-tab">
                         <div class="container-fluid">
                             <div class="table-responsive fixed-table-body">
                                 {{ pbs.to_html(classes="table table-bordered table-striped
-                                    text-center", justify="center", index=False, na_rep='--') | safe }}
+                                text-center", justify="center", index=False, na_rep='--') | safe }}
                                 {% if pbs|length == 50 %}
-                                    <div class="alert alert-warning text-center" role="alert">
-                                      Showing only up to 50 latest PBs
-                                    </div>
+                                <div class="alert alert-warning text-center" role="alert">
+                                    Showing only up to 50 latest PBs
+                                </div>
                                 {% endif %}
                             </div>
                         </div>
@@ -220,33 +221,34 @@
             </div>
 
             <div role="tabpanel" class="tab-pane fade show active"
-                 id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-plot"
-                 aria-labelledby="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-plot-tab">
+                 id="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-plot"
+                 aria-labelledby="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-plot-tab">
                 {{ details[1] | safe }}
             </div>
 
             <div role="tabpanel" class="tab-pane fade"
-                 id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-histogram"
-                 aria-labelledby="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-histogram-tab">
+                 id="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-histogram"
+                 aria-labelledby="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-histogram-tab">
                 {{ details[2] | safe }}
             </div>
 
             <div role="tabpanel" class="tab-pane fade"
-                 id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-topn"
-                 aria-labelledby="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-topn-tab">
+                 id="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-topn"
+                 aria-labelledby="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-topn-tab">
 
                 <nav class="navbar navbar-expand-lg navbar-light bg-light justify-content-center"
                      id="topn-navbar">
                     <ul class="nav nav-pills" role="tablist">
                         {% for series, topn in details[0].items() %}
-                        <li class="nav-item"><a id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-topn-{{ series }}-tab"
-                                                href="#puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-topn-{{ series }}"
-                                                aria-controls="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-topn-{{ series }}"
-                                                role="tab" data-toggle="tab"
-                                                class="nav-link
+                        <li class="nav-item"><a
+                                id="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-topn-{{ series }}-tab"
+                                href="#puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-topn-{{ series }}"
+                                aria-controls="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-topn-{{ series }}"
+                                role="tab" data-toggle="tab"
+                                class="nav-link
                                                         {% if loop.index == 1 %} active {% endif %}">
-                                                    {{ series }}
-                                                </a>
+                            {{ series }}
+                        </a>
                         </li>
                         {% endfor %}
                     </ul>
@@ -255,12 +257,12 @@
                 <div class="tab-content">
                     {% for series, topn in details[3].items() %}
                     <div role="tabpanel" class="tab-pane fade {% if loop.index == 1 %} show active {% endif %}"
-                         id="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-topn-{{ series }}"
-                         aria-labelledby="puz-{{ puz }}-cat-{{ cat|replace(' ','-') }}-topn-{{ series }}-tab">
+                         id="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-topn-{{ series }}"
+                         aria-labelledby="puz-{{ puz|replace(' ','-') }}-cat-{{ cat|replace(' ','-') }}-topn-{{ series }}-tab">
                         <div class="container-fluid">
                             <div class="table-responsive fixed-table-body">
                                 {{ topn.to_html(classes="table table-bordered table-striped
-                                    text-center", justify="center", index=False, na_rep='--') | safe }}
+                                text-center", justify="center", index=False, na_rep='--') | safe }}
                             </div>
                         </div>
                     </div>
@@ -384,6 +386,7 @@ $('.inner-navbar ul li a, #pbs-tab').click(function() {
 window.onbeforeunload = function() {
     return true;
 };
+
 
 
 </script>

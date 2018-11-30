@@ -502,12 +502,12 @@ def create_dataframe(file, timezone):
         df.columns = headers.strip().split(sep=',')
         has_dates = True
 
-        data = df.rename_axis('MyIdx').sort_values(['Date(millis)', 'MyIdx'])
+        df = df.rename_axis('MyIdx').sort_values(['Date(millis)', 'MyIdx'])
 
-        data['SolveDatetime'] = to_datetime(data['Date(millis)'], unit='ms').astype('datetime64[s]').dt.tz_localize(
+        df['SolveDatetime'] = to_datetime(df['Date(millis)'], unit='ms').astype('datetime64[s]').dt.tz_localize(
             'UTC').dt.tz_convert(timezone).dt.tz_localize(None)
 
-        return data, has_dates, timer_type
+        return df, has_dates, timer_type
     elif headers.startswith('{"session1"'):
         # cstimer
         timer_type = 'cstimer'
@@ -533,6 +533,34 @@ def create_dataframe(file, timezone):
         df = DataFrame(data=solves, columns=['Category', 'Time(millis)', 'Penalty'])
         has_dates = False
         df['Puzzle'] = 'Sessions'
+
+        return df, has_dates, timer_type
+    elif headers.startswith('{"puzzles":[{"name":'):
+        # BlockKeeper
+        timer_type = 'BlockKeeper'
+        data = json.load(file)
+
+        solves = []
+        for puzzle in data['puzzles']:
+            for category in puzzle['sessions']:
+                for solve in category['records']:
+                    if solve['result'] == 'OK':
+                        penalty = 0
+                    elif solve['result'] == 'DNF':
+                        penalty = 2
+                    else:
+                        penalty = 1  # +2 penalty (marked in the file as "result": "+2"
+
+                    time_millis = solve['time'] * 1000
+                    if penalty == 1:
+                        time_millis += 2000
+
+                    solves.append([puzzle['name'], category['name'], time_millis, solve['date'], penalty])
+
+        df = DataFrame(data=solves, columns=['Puzzle', 'Category', 'Time(millis)', 'Date(millis)', 'Penalty'])
+        df['SolveDatetime'] = to_datetime(df['Date(millis)'], unit='ms').astype('datetime64[s]').dt.tz_localize(
+            'UTC').dt.tz_convert(timezone).dt.tz_localize(None)
+        has_dates = True
 
         return df, has_dates, timer_type
     else:
@@ -594,6 +622,6 @@ def process_data(file, chart_by, timezone):
 
     return solves_details, overall_pbs, solves_by_dates, timer_type, len(solves_data)
 
-# TODO puz-cat tabs prevent second row on mobile. collapse? images?
 # TODO timers support requested: block keeper, chaotimer (no export?!), zyxtimer (plus textbox input)
 # TODO add to histogram: consistency score = mean / stdev ( = 1/CV), also show relevant aoX
+# TODO puz-cat tabs prevent second row on mobile. collapse? images?
