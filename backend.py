@@ -515,7 +515,7 @@ def create_dataframe(file, timezone):
 
         solves = []
         for session_id, session_values in json.loads(json.loads(data['properties'])['sessionData']).items():
-            for times, scramble, notes in json.loads(data['session' + session_id]):
+            for times, scramble, notes in json.loads(data.get('session' + session_id, '[]')):
                 if times[0] == 2000:
                     final_time = times[1] + 2000
                 else:
