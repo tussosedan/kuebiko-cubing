@@ -9,6 +9,7 @@ from plotly.offline import plot
 import plotly.graph_objs as go
 
 import json
+import re
 
 from collections import OrderedDict
 
@@ -490,6 +491,32 @@ def get_solves_by_dates(solves_data):
     return resdict
 
 
+def parse_zyxtimer_result(s):
+    if s[-3:] == 'DNF':
+        solve_time = s[:-3]
+        penalty = 2
+    elif s[-1] == '+':
+        solve_time = s[:-1]
+        penalty = 1
+    else:
+        solve_time = s
+        penalty = 0
+
+    solve_time_parts = solve_time.split(':')
+    if len(solve_time_parts) == 3:
+        solve_time_ms = (float(solve_time_parts[0]) * 60 * 60 + float(solve_time_parts[1]) * 60 + float(
+            solve_time_parts[2])) * 1000
+    elif len(solve_time_parts) == 2:
+        solve_time_ms = (float(solve_time_parts[0]) * 60 + float(solve_time_parts[1])) * 1000
+    else:
+        solve_time_ms = float(solve_time_parts[0]) * 1000
+
+    if penalty == 1:
+        solve_time_ms += 2000
+
+    return solve_time_ms, penalty
+
+
 def create_dataframe(file, timezone):
     file.seek(0)
     headers = file.readline().decode()
@@ -563,6 +590,29 @@ def create_dataframe(file, timezone):
         has_dates = True
 
         return df, has_dates, timer_type
+    elif headers.startswith('Session: '):
+        # ZYXTimer
+        timer_type = 'ZYXTimer'
+
+        all_solves = []
+        session = None  # avoiding "before assignment" warning
+        for line in file:
+            line_str = line.decode()
+            if line_str.startswith('Session:'):
+                session = line_str[9:].strip()
+            elif len(line_str.strip()) > 0:
+                # remove comments in [], although as the note could include commas and [], it's never fully safe
+                line_clean = re.sub(r'\[.*\]', '', line_str.strip())
+
+                solves = line_clean.split(sep=', ')
+                session_solves = [[session] + list(parse_zyxtimer_result(solve)) for solve in solves]
+                all_solves.extend(session_solves)
+        df = DataFrame(data=all_solves, columns=['Category', 'Time(millis)', 'Penalty'])
+
+        has_dates = False
+        df['Puzzle'] = 'Sessions'
+
+        return df, has_dates, timer_type
     else:
         raise NotImplementedError('Unrecognized file type')
 
@@ -622,6 +672,6 @@ def process_data(file, chart_by, timezone):
 
     return solves_details, overall_pbs, solves_by_dates, timer_type, len(solves_data)
 
-# TODO timers support requested: block keeper, chaotimer (no export?!), zyxtimer (plus textbox input)
+# TODO timers support requested: chaotimer (no export?!), zyxtimer (verify +2 values, plus textbox input?)
 # TODO add to histogram: consistency score = mean / stdev ( = 1/CV), also show relevant aoX
-# TODO puz-cat tabs prevent second row on mobile. collapse? images?
+# TODO puz-cat tabs prevent second row on mobile. collapse? images? also collapse long main nav?

@@ -18,9 +18,13 @@
                     <abbr data-toggle="tooltip" data-placement="bottom" data-html="true"
                           title="Export/Import > Export ><br/> For backup">Twisty Timer</abbr>,
                     <abbr data-toggle="tooltip" data-placement="bottom" data-html="true"
-                          title="Export > Export to file<br/>Note: cstimer data doesn't include dates">cstimer</abbr>,
+                          title="Export > Export to file<br/><u>Note</u>: cstimer data doesn't include dates">cstimer</abbr>,
                     <abbr data-toggle="tooltip" data-placement="bottom" data-html="true"
-                          title="Settings > Data ><br/> Block Keeper > Export">Block Keeper</abbr>
+                          title="Settings > Data ><br/> Block Keeper > Export">Block Keeper</abbr>,
+                    <abbr data-toggle="tooltip" data-placement="bottom" data-html="true"
+                          title="Session > Save ><br/> Copy/Email All Sessions<br/>
+                                    <u>Note</u>: ZYX Timer data doesn't include dates">ZYX Timer</abbr>
+
                 </div>
                 <br/>
                 <span class="h6">Chart by </span>
@@ -34,7 +38,7 @@
                                autocomplete="off"> Solve #
                     </label>
                 </div>
-                <input type="hidden" id="tz" name="tz" value="" />
+                <input type="hidden" id="tz" name="tz" value=""/>
                 <br/><br/>
                 <input type="file" name="file" id="file" class="form-control-file mx-auto" style="width: 220px;">
             </div>
@@ -111,7 +115,8 @@ function loading() {
 "Restickering a 17x17",
 "Solving XXCross every time",
 "Generating memes",
-"Reverse engineering zeroing"
+"Reverse engineering zeroing",
+"Arguing about what sub-X means"
                      ];
 
     var randText = shuffle(loadingText);
@@ -125,6 +130,8 @@ function loading() {
         });
         }, 4 * 1000)
 }
+
+
 
 
 </script>
