@@ -504,8 +504,8 @@ def get_solves_by_dates(solves_data):
     resdict = OrderedDict()
 
     groups = (('Day', '%Y-%m-%d', None, None),
-              ('Month', '%Y-%m', '%b %Y', None),
-              ('Year', '%Y', 'd', 'M1'))
+              ('Month', '%Y-%m', '%b %Y', 'M1'),
+              ('Year', '%Y', 'd', None))
 
     for group_name, group_date_str, tickformat, dtick in groups:
         resdict[group_name] = generate_dates_histogram(solves_data, group_date_str, tickformat, dtick)
