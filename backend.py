@@ -525,7 +525,7 @@ def create_dataframe(file, timezone):
     if headers.startswith('Puzzle,Category,Time(millis),Date(millis),Scramble,Penalty,Comment'):
         # TwistyTimer
         timer_type = 'TwistyTimer'
-        df = read_csv(file.stream, sep=';', skiprows=1, header=None)
+        df = read_csv(file, sep=';', skiprows=1, header=None)
         df.columns = headers.strip().split(sep=',')
         has_dates = True
 
