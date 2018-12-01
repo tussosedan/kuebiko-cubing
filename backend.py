@@ -383,25 +383,34 @@ def generate_histogram(plot_data_raw, name):
 
 def get_histograms_plot(solves_data, puzzle, category):
     data = list()
+    ao = dict()
     solves_data_part = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)]
+    solves_count = len(solves_data_part)
 
     plot_data_raw = solves_data_part['single']
     data.append(generate_histogram(plot_data_raw, 'all'))
+    ao['all'] = 'all ' + str(solves_count) + ' solves'
 
-    plot_data_raw = solves_data_part['single'][-100:]
-    data.append(generate_histogram(plot_data_raw, 'last 100'))
+    if solves_count > 100:
+        plot_data_raw = solves_data_part[['single', 'ao100']][-100:]
+        data.append(generate_histogram(plot_data_raw['single'], 'last 100'))
+        ao['last 100'] = 'last ao100: ' + str(plot_data_raw['ao100'].iloc[-1])
 
     part_reindexed = solves_data_part[['single', 'ao100', 'ao1000']].reset_index()
     idxmin = part_reindexed['ao100'].idxmin()
     if notnull(idxmin):
         data.append(generate_histogram(part_reindexed['single'][idxmin + 1 - 100: idxmin + 1], 'PB ao100'))
+        ao['PB ao100'] = 'PB ao100: ' + str(part_reindexed['ao100'][idxmin])
 
-    plot_data_raw = solves_data_part['single'][-1000:]
-    data.append(generate_histogram(plot_data_raw, 'last 1000'))
+    if solves_count > 1000:
+        plot_data_raw = solves_data_part[['single', 'ao1000']][-1000:]
+        data.append(generate_histogram(plot_data_raw['single'], 'last 1000'))
+        ao['last 1000'] = 'last ao1000: ' + str(plot_data_raw['ao1000'].iloc[-1])
 
     idxmin = part_reindexed['ao1000'].idxmin()
     if notnull(idxmin):
         data.append(generate_histogram(part_reindexed['single'][idxmin + 1 - 1000: idxmin + 1], 'PB ao1000'))
+        ao['PB ao1000'] = 'PB ao1000: ' + str(part_reindexed['ao1000'][idxmin])
 
     data[0].visible = True
 
@@ -409,26 +418,39 @@ def get_histograms_plot(solves_data, puzzle, category):
     datalen = len(data)
     for i, bar in enumerate(data):
         visibility = [True if trace == i else False for trace in range(datalen)]
-        buttons.append(dict(args=['visible', visibility],
+        buttons.append(dict(args=[{'visible': visibility},
+                                  {'annotations': [dict(x=0,
+                                                        xref='paper',
+                                                        y=1.05,
+                                                        yref='paper',
+                                                        showarrow=False,
+                                                        text=ao.get(bar['name'], ''))]}],
                             label=bar['name'],
-                            method='restyle'))
+                            method='update'))
 
     layout = go.Layout(margin={'l': 50,
                                'r': 50,
                                'b': 50,
-                               't': 75,
+                               't': 50,
                                'pad': 4
                                },
-                       xaxis={'tickformat': '%M:%S'})
+                       xaxis={'tickformat': '%M:%S'},
+                       annotations=[dict(x=0,
+                                         xref='paper',
+                                         y=1.05,
+                                         yref='paper',
+                                         showarrow=False,
+                                         text=ao.get('all'))]
+                       )
 
     updatemenus = list([
         dict(
             buttons=buttons,
-            direction='left',
-            type='buttons',
-            x=0.1,
-            xanchor='left',
-            y=1.1,
+            direction='down',
+            type='dropdown',
+            x=1,
+            xanchor='right',
+            # y=1.1,
             yanchor='top'
         ),
     ])
