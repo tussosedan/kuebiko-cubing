@@ -131,7 +131,12 @@ def get_pb_progression(solves_data, puzzle, category, col_name, has_dates, timez
         last_date = solves_data_pb.tail(1)['SolveDatetime']
         last_date_value = Series(datetime.utcnow().replace(microsecond=0)).dt.tz_localize(
             'UTC').dt.tz_convert(timezone).dt.tz_localize(None).iloc[0]
-        solves_data_pb.loc[last_date.index, 'PB For Time'] = str(last_date_value - last_date.iloc[0]) + ' and counting'
+        last_date_diff = last_date_value - last_date.iloc[0]
+        if notnull(last_date_diff):
+            solves_data_pb.loc[last_date.index, 'PB For Time'] = str(last_date_diff) + ' and counting'
+
+        solves_data_pb['SolveDatetime'] = solves_data_pb['SolveDatetime'].fillna(value='--')
+        solves_data_pb['PB For Time'] = solves_data_pb['PB For Time'].fillna(value='--')
 
         solves_data_pb.rename(inplace=True, columns={"SolveDatetime": "Date & Time"})
     else:
@@ -184,7 +189,7 @@ def get_top_solves(solves_data_part, col_name, top_n, has_dates):
         column_list = [col_name, 'Solve #']
 
     return solves_data_part[solves_data_part['Penalty'] != 2][column_list].sort_values([col_name, 'Solve #']).head(
-        top_n)
+        top_n).fillna(value='--')
 
 
 def get_all_top_solves(solves_data, puzzle, category, has_dates):
@@ -604,7 +609,8 @@ def create_dataframe(file, timezone):
                     if penalty == 1:
                         time_millis += 2000
 
-                    solves.append([puzzle['name'], category['name'], time_millis, solve['date'], penalty])
+                    # some timers like Block Keeper only added dates at some point in the middle of their existence
+                    solves.append([puzzle['name'], category['name'], time_millis, solve.get('date', None), penalty])
 
         df = DataFrame(data=solves, columns=['Puzzle', 'Category', 'Time(millis)', 'Date(millis)', 'Penalty'])
         df['SolveDatetime'] = to_datetime(df['Date(millis)'], unit='ms').astype('datetime64[s]').dt.tz_localize(
