@@ -135,9 +135,6 @@ def get_pb_progression(solves_data, puzzle, category, col_name, has_dates, timez
         if notnull(last_date_diff):
             solves_data_pb.loc[last_date.index, 'PB For Time'] = str(last_date_diff) + ' and counting'
 
-        solves_data_pb['SolveDatetime'] = solves_data_pb['SolveDatetime'].fillna(value='--')
-        solves_data_pb['PB For Time'] = solves_data_pb['PB For Time'].fillna(value='--')
-
         solves_data_pb.rename(inplace=True, columns={"SolveDatetime": "Date & Time"})
     else:
         solves_data_pb = solves_data_part[(solves_data_part[col_name + '_cummin'].diff() != 0)
@@ -174,6 +171,16 @@ def generate_pbs_display(pb_progressions, has_dates):
         if has_dates:
             pbs_display = pbs[['PB ' + series, 'Date & Time', 'PB For Time', 'Solve #',
                                'PB For # Solves']][:50]
+
+            if pbs_display['Date & Time'].isnull().all():
+                pbs_display.drop(labels='Date & Time', axis='columns', inplace=True)
+            else:
+                pbs_display['Date & Time'] = pbs_display['Date & Time'].fillna(value='--')
+
+            if pbs_display['PB For Time'].isnull().all():
+                pbs_display.drop(labels='PB For Time', axis='columns', inplace=True)
+            else:
+                pbs_display['PB For Time'] = pbs_display['PB For Time'].fillna(value='--')
         else:
             pbs_display = pbs[['PB ' + series, 'Solve #', 'PB For # Solves']][:50]
 
@@ -183,7 +190,7 @@ def generate_pbs_display(pb_progressions, has_dates):
 
 
 def get_top_solves(solves_data_part, col_name, top_n, has_dates):
-    if has_dates:
+    if has_dates and not solves_data_part['Date & Time'].isnull().all():
         column_list = [col_name, 'Date & Time', 'Solve #']
     else:
         column_list = [col_name, 'Solve #']
