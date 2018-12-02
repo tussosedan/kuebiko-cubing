@@ -33,7 +33,7 @@
 
             {% for puz,cats in solves_details.items() %}
             {% set outerloop = loop %}
-            {% set puz_replaced = puz|replace(' ','-')|replace('/','-') %}
+            {% set puz_replaced = puz|replace(' ','-')|replace('/','-')|replace('.','-') %}
 
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle text-white {% if loop.index == 1 %} active {% endif %}"
@@ -43,7 +43,7 @@
                 <div class="dropdown-menu" aria-labelledby="puz-{{ puz_replaced }}-dropdown">
 
                     {% for cat,details in cats.items() %}
-                    {% set cat_replaced = cat|replace(' ','-')|replace('/','-') %}
+                    {% set cat_replaced = cat|replace(' ','-')|replace('/','-')|replace('.','-') %}
                     <a class="dropdown-item {% if outerloop.index == 1 and loop.index == 1 %} active {% endif %}"
                        id="puz-{{ puz_replaced }}-cat-{{ cat_replaced }}-tab"
                        href="#puz-{{ puz_replaced }}-cat-{{ cat_replaced }}"
@@ -133,8 +133,8 @@
     {% for puz,cats in solves_details.items() %}
     {% set outerloop = loop %}
     {% for cat,details in cats.items() %}
-    {% set puz_replaced = puz|replace(' ','-')|replace('/','-') %}
-    {% set cat_replaced = cat|replace(' ','-')|replace('/','-') %}
+    {% set puz_replaced = puz|replace(' ','-')|replace('/','-')|replace('.','-') %}
+    {% set cat_replaced = cat|replace(' ','-')|replace('/','-')|replace('.','-') %}
     <div role="tabpanel"
          class="tab-pane fade {% if outerloop.index == 1 and loop.index == 1 %} show active {% endif %}"
          id="puz-{{ puz_replaced }}-cat-{{ cat_replaced }}"
