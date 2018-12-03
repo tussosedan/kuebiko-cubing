@@ -551,6 +551,21 @@ def parse_zyxtimer_result(s):
     return solve_time_ms, penalty
 
 
+def parse_qqtimer_result(s):
+    if s[-1] == '-':
+        solve_time_ms = int(s[:-1])
+        penalty = 2
+    elif s[-1] == '+':
+        solve_time_ms = int(s[:-1]) + 2000
+        penalty = 1
+    else:
+        solve_time_ms = int(s)
+        penalty = 0
+
+    return solve_time_ms, penalty
+
+
+# penalty: 0: none, 1: +2 (time should already include the +2), 2: DNF
 def create_dataframe(file, timezone):
     file.seek(0)
     headers = file.readline().decode()
@@ -648,6 +663,21 @@ def create_dataframe(file, timezone):
         df['Puzzle'] = 'Sessions'
 
         return df, has_dates, timer_type
+    elif headers.strip('"')[-1] == '>':
+        # qqtimer
+        timer_type = 'qqtimer'
+
+        # comments are in the form "time|comment", + at end (after comment...), last char >
+        line_clean = re.sub(r'\|.*?([>,+])', r'\1', headers.strip('"'))[:-1]
+        solves = [parse_qqtimer_result(solve) for solve in line_clean.split(sep=',')]
+
+        df = DataFrame(data=solves, columns=['Time(millis)', 'Penalty'])
+
+        has_dates = False
+        df['Puzzle'] = 'Sessions'
+        df['Category'] = 'qqtimer'
+
+        return df, has_dates, timer_type
     else:
         raise NotImplementedError('Unrecognized file type')
 
@@ -707,6 +737,8 @@ def process_data(file, chart_by, timezone):
 
     return solves_details, overall_pbs, solves_by_dates, timer_type, len(solves_data)
 
-# TODO timers support requested: chaotimer (no export?!), zyxtimer (verify +2 values, plus textbox input?)
-# TODO add to histogram: consistency score = mean / stdev ( = 1/CV), also show relevant aoX
+# TODO timers support: chaotimer, Prisma Puzzle Timer
+#   for prisma use locale.set_locale, and the format string: to_datetime(df['date'], format="%d.%b.%Y %H:%M:%S")
+#       and request.accept_languages[0], and test using different locales, and verify data timezone
+# TODO add to histogram: consistency score = mean / stdev ( = 1/CV), also show relevant aoX. check charts and pbs.
 # TODO puz-cat tabs prevent second row on mobile. collapse? images? also collapse long main nav?
