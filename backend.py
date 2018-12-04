@@ -282,6 +282,10 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
     if chart_by == 'chart-by-solve-num':
         has_dates = False
 
+    # for cases where a timer add dates support at some point, but some categories can still be completely date-less
+    if has_dates and plot_data['SolveDatetime'].isnull().all():
+        has_dates = False
+
     if has_dates:
         data_plot_x = plot_data['SolveDatetime']
     else:
@@ -590,8 +594,18 @@ def create_dataframe(file, timezone):
         data = json.load(file)
 
         solves = []
+        has_dates = False  # correct later to True if dates found
         for session_id, session_values in json.loads(json.loads(data['properties'])['sessionData']).items():
-            for times, scramble, notes in json.loads(data.get('session' + session_id, '[]')):
+            for solve_data in json.loads(data.get('session' + session_id, '[]')):
+                if len(solve_data) == 3:
+                    # old version, without dates
+                    times, scramble, notes = solve_data
+                    date = None
+                else:
+                    # new version, with dates (starting December 2018)
+                    times, scramble, notes, date = solve_data
+                    has_dates = True
+
                 if times[0] == 2000:
                     final_time = times[1] + 2000
                 else:
@@ -604,10 +618,13 @@ def create_dataframe(file, timezone):
                 else:
                     penalty = 0
 
-                solves.append([session_values['name'], final_time, penalty])
+                solves.append([session_values['name'], date, final_time, penalty])
 
-        df = DataFrame(data=solves, columns=['Category', 'Time(millis)', 'Penalty'])
-        has_dates = False
+        df = DataFrame(data=solves, columns=['Category', 'Date(millis)', 'Time(millis)', 'Penalty'])
+
+        df['SolveDatetime'] = to_datetime(df['Date(millis)'], unit='s').astype('datetime64[s]').dt.tz_localize(
+            'UTC').dt.tz_convert(timezone).dt.tz_localize(None)
+
         df['Puzzle'] = 'Sessions'
 
         return df, has_dates, timer_type
