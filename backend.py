@@ -481,7 +481,7 @@ def get_histograms_plot(solves_data, puzzle, category):
 
 def generate_dates_histogram(solves_data, group_date_str, tickformat, dtick):
     solves_grouped = solves_data[['Puzzle', 'Category', 'single']].groupby(
-        [solves_data.SolveDatetime.dt.strftime(group_date_str), solves_data.Puzzle, solves_data.Category])[
+        [solves_data.SolveDatetime.dropna().dt.strftime(group_date_str), solves_data.Puzzle, solves_data.Category])[
         'Puzzle'].count().rename('#')
 
     renamed_puzzles = [rename_puzzle(puz) for puz in solves_grouped.index.levels[1]]
@@ -495,7 +495,8 @@ def generate_dates_histogram(solves_data, group_date_str, tickformat, dtick):
         data.append(go.Bar(
             x=plot_data.index,
             y=plot_data[col],
-            name=col
+            name=col,
+            showlegend=True
         ))
 
     layout = go.Layout(
