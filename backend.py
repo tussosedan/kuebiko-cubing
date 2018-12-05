@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from math import floor, ceil, isnan
 
 from numba import jit
-from numpy import sort, repeat, NaN, array, all
+from numpy import sort, repeat, NaN, array, all, select
 from pandas import read_csv, to_datetime, concat, notnull, DataFrame, Series, cut
 
 from plotly.offline import plot
@@ -10,6 +10,7 @@ import plotly.graph_objs as go
 
 import json
 import re
+import dateparser
 
 from collections import OrderedDict
 
@@ -530,6 +531,18 @@ def get_solves_by_dates(solves_data):
     return resdict
 
 
+def get_time_ms_from_string(s):
+    solve_time_parts = s.split(':')
+    if len(solve_time_parts) == 3:
+        solve_time_ms = (float(solve_time_parts[0]) * 60 * 60 + float(solve_time_parts[1]) * 60 + float(
+            solve_time_parts[2])) * 1000
+    elif len(solve_time_parts) == 2:
+        solve_time_ms = (float(solve_time_parts[0]) * 60 + float(solve_time_parts[1])) * 1000
+    else:
+        solve_time_ms = float(solve_time_parts[0]) * 1000
+    return solve_time_ms
+
+
 def parse_zyxtimer_result(s):
     if s[-3:] == 'DNF':
         solve_time = s[:-3]
@@ -541,14 +554,7 @@ def parse_zyxtimer_result(s):
         solve_time = s
         penalty = 0
 
-    solve_time_parts = solve_time.split(':')
-    if len(solve_time_parts) == 3:
-        solve_time_ms = (float(solve_time_parts[0]) * 60 * 60 + float(solve_time_parts[1]) * 60 + float(
-            solve_time_parts[2])) * 1000
-    elif len(solve_time_parts) == 2:
-        solve_time_ms = (float(solve_time_parts[0]) * 60 + float(solve_time_parts[1])) * 1000
-    else:
-        solve_time_ms = float(solve_time_parts[0]) * 1000
+    solve_time_ms = get_time_ms_from_string(solve_time)
 
     if penalty == 1:
         solve_time_ms += 2000
@@ -696,6 +702,42 @@ def create_dataframe(file, timezone):
         df['Category'] = 'qqtimer'
 
         return df, has_dates, timer_type
+    elif headers.count('\t') == 4:
+        # Prisma Puzzle Timer
+        timer_type = 'Prisma'
+
+        df = read_csv(file, delimiter='\t', names=['SolveNum', 'DateStr', 'ResultStr', 'PenaltyStr', 'Scramble'],
+                      dtype={'PenaltyStr': 'str'})
+        # prisma displays latest first, reverse it
+        df.iloc[:] = df.iloc[::-1].values
+        df['Time(millis)'] = df['ResultStr'].apply(get_time_ms_from_string)
+        df['Penalty'] = select(
+            [
+                df['PenaltyStr'] == '+2',
+                df['PenaltyStr'] == 'DNF'
+            ],
+            [
+                1,
+                2
+            ],
+            default=0
+        )
+        df.loc[df['Penalty'] == 1, 'Time(millis)'] += 2000
+
+        # prisma is using a localized medium date and time string
+        # try to parse it naively with pandas and fallback to dateparser (much slower)
+        try:
+            df['SolveDatetime'] = to_datetime(df['DateStr']).astype('datetime64[s]')
+        except ValueError:
+            ddp = dateparser.date.DateDataParser(try_previous_locales=True)
+            df['SolveDatetime'] = df['DateStr'].apply(lambda x: ddp.get_date_data(x)['date_obj']).astype(
+                'datetime64[s]')
+
+        has_dates = True
+        df['Puzzle'] = 'Sessions'
+        df['Category'] = 'Prisma'
+
+        return df, has_dates, timer_type
     else:
         raise NotImplementedError('Unrecognized file type')
 
@@ -755,8 +797,6 @@ def process_data(file, chart_by, timezone):
 
     return solves_details, overall_pbs, solves_by_dates, timer_type, len(solves_data)
 
-# TODO timers support: chaotimer, Prisma Puzzle Timer
-#   for prisma use locale.set_locale, and the format string: to_datetime(df['date'], format="%d.%b.%Y %H:%M:%S")
-#       and request.accept_languages[0], and test using different locales, and verify data timezone
+# TODO timers support: chaotimer
 # TODO add to histogram: consistency score = mean / stdev ( = 1/CV), also show relevant aoX. check charts and pbs.
 # TODO puz-cat tabs prevent second row on mobile. collapse? images? also collapse long main nav?
