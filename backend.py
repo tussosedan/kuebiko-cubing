@@ -196,8 +196,12 @@ def get_top_solves(solves_data_part, col_name, top_n, has_dates):
     else:
         column_list = [col_name, 'Solve #']
 
-    return solves_data_part[solves_data_part['Penalty'] != 2][column_list].sort_values([col_name, 'Solve #']).head(
-        top_n).fillna(value='--')
+    top_solves = solves_data_part[(solves_data_part['Penalty'] != 2) & (solves_data_part[col_name].notnull())][
+        column_list].sort_values([col_name, 'Solve #']).head(top_n)
+    top_solves[col_name] = top_solves[col_name].apply(sec2dtstr)
+    top_solves.fillna(value='--', inplace=True)
+
+    return top_solves
 
 
 def get_all_top_solves(solves_data, puzzle, category, has_dates):
