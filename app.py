@@ -24,11 +24,13 @@ def allowed_file(filename):
 def index():
     if request.method == 'POST':
         # check if the post request has the file part or textinput
-        if 'file' not in request.files and 'textinput' not in request.form:
+        if 'file' not in request.files and request.form.get('textinput', '') == '':
             flash('Please select a file or paste the data')
             return redirect(request.url)
         file = request.files.get('file', None)
         textdata = request.form.get('textinput', None)
+        if textdata == '':
+            textdata = None
 
         # if user does not select file, browser also
         # submit an empty part without filename
@@ -64,10 +66,10 @@ def index():
                 return redirect(request.url)
             except Exception:
                 if not app.debug:
-                    (Markup('Something went wrong while reading the file. '
-                            'Please open an issue on the '
-                            '<a href="https://github.com/tussosedan/kuebiko-cubing/issues">github page</a>'
-                            ' and upload the file there.'))
+                    flash(Markup('Something went wrong while reading the file. '
+                                 'Please open an issue on the '
+                                 '<a href="https://github.com/tussosedan/kuebiko-cubing/issues">github page</a>'
+                                 ' and upload the file there.'))
                     timestr = time.strftime("%Y%m%d_%H%M%S_")
                     if file:
                         filename = timestr + secure_filename(file.filename)
