@@ -63,23 +63,26 @@ def index():
                              ' and upload the file there.'))
                 return redirect(request.url)
             except Exception:
-                flash(Markup('Something went wrong while reading the file. '
-                             'Please open an issue on the '
-                             '<a href="https://github.com/tussosedan/kuebiko-cubing/issues">github page</a>'
-                             ' and upload the file there.'))
-                timestr = time.strftime("%Y%m%d_%H%M%S_")
-                if file:
-                    filename = timestr + secure_filename(file.filename)
-                else:
-                    filename = timestr + "textarea"
-                file_to_send.seek(0)
-                with open(os.path.join(app.config['UPLOAD_FOLDER'], filename), 'wb') as data_file:
-                    data_file.write(file_to_send.read())
+                if not app.debug:
+                    (Markup('Something went wrong while reading the file. '
+                            'Please open an issue on the '
+                            '<a href="https://github.com/tussosedan/kuebiko-cubing/issues">github page</a>'
+                            ' and upload the file there.'))
+                    timestr = time.strftime("%Y%m%d_%H%M%S_")
+                    if file:
+                        filename = timestr + secure_filename(file.filename)
+                    else:
+                        filename = timestr + "textarea"
+                    file_to_send.seek(0)
+                    with open(os.path.join(app.config['UPLOAD_FOLDER'], filename), 'wb') as data_file:
+                        data_file.write(file_to_send.read())
 
-                err_filename = filename + '_err'
-                with open(os.path.join(app.config['UPLOAD_FOLDER'], err_filename), 'w') as err_file:
-                    err_file.write(traceback.format_exc())
-                return redirect(request.url)
+                    err_filename = filename + '_err'
+                    with open(os.path.join(app.config['UPLOAD_FOLDER'], err_filename), 'w') as err_file:
+                        err_file.write(traceback.format_exc())
+                    return redirect(request.url)
+                else:
+                    raise
     return render_template("index.html")
 
 
