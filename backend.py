@@ -711,7 +711,7 @@ def create_dataframe(file, timezone):
         timer_type = 'Prisma'
 
         df = read_csv(file, delimiter='\t', names=['SolveNum', 'DateStr', 'ResultStr', 'PenaltyStr', 'Scramble'],
-                      dtype={'PenaltyStr': 'str'})
+                      dtype={'PenaltyStr': str}, na_filter=False)
         # prisma displays latest first, reverse it
         df.iloc[:] = df.iloc[::-1].values
         df['Time(millis)'] = df['ResultStr'].apply(get_time_ms_from_string)
