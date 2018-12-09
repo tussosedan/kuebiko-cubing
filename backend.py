@@ -800,7 +800,3 @@ def process_data(file, chart_by, timezone):
         solves_by_dates = None
 
     return solves_details, overall_pbs, solves_by_dates, timer_type, len(solves_data)
-
-# TODO timers support: chaotimer
-# TODO add to histogram: consistency score = mean / stdev ( = 1/CV), also show relevant aoX. check charts and pbs.
-# TODO puz-cat tabs prevent second row on mobile. collapse? images? also collapse long main nav?

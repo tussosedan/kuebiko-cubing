@@ -1,0 +1,3 @@
+TODO timers support: chaotimer
+TODO add to histogram: consistency score = mean / stdev ( = 1/CV). check charts and pbs.
+TODO puz-cat tabs prevent second row on mobile. collapse? images? also collapse long main nav?
