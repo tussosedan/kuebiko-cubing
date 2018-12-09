@@ -782,7 +782,7 @@ def process_data(file, chart_by, timezone):
     solves_data[
         ['single_cummin', 'mo3_cummin', 'ao5_cummin', 'ao12_cummin',
          'ao50_cummin', 'ao100_cummin', 'ao1000_cummin']] = \
-        solves_data[solves_data['Penalty'] != 2].groupby(['Puzzle', 'Category']).cummin()[
+        solves_data.groupby(['Puzzle', 'Category']).cummin()[
             ['single', 'mo3', 'ao5', 'ao12', 'ao50', 'ao100', 'ao1000']]
 
     solves_data[
