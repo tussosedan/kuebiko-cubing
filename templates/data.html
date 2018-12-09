@@ -57,6 +57,12 @@
             {% endfor %}
 
             <li class="nav-item nav-link text-white d-none d-lg-block">|</li>
+            <li class="nav-item"><a id="rsd-explain-tab" href="#rsd-explain" aria-controls="rsd-explain"
+                                    role="tab" data-toggle="tab"
+                                    class="nav-link text-white">RSD</a>
+            </li>
+
+            <li class="nav-item nav-link text-white d-none d-lg-block">|</li>
             <li class="nav-item">
                 <a href="{{url_for('index')}}" class="nav-link text-white">Analyze another file</a>
             </li>
@@ -90,7 +96,26 @@
 
         <div class="table-responsive">
             {{ overall_pbs.to_html(classes="table table-bordered table-striped table-sm
-            text-center", justify="center", na_rep='--') | safe }}
+            text-center", justify="center", na_rep='--', escape=False) | safe }}
+        </div>
+    </div>
+
+    <div role="tabpanel" class="tab-pane fade"
+         id="rsd-explain"
+         aria-labelledby="rsd-explain-tab">
+
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary justify-content-center">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="navbar-item text-white"><h4>Relative Standard Deviation (RSD)</h4></li>
+            </ul>
+        </nav>
+
+        <div class="jumbotron col-12 col-md-6 mx-auto">
+            RSD is the relative measure of the consistency of solve times that can be compared between cubers.
+            It is calculated as the trimmed standard deviation divided by the trimmed mean, displayed as a percentage.
+            <b>The lower the RSD, the more consistent the solves.</b><br/>
+            For additional explanations, suggested interpretations and discussion see the
+            <a href="https://www.reddit.com/r/Cubers/" target="_blank" rel="noopener noreferrer">reddit thread here</a>.
         </div>
     </div>
 
@@ -376,7 +401,7 @@ function resizeend() {
 
 // collapse navbar toggle on menu selection
  $(function(){
-     $(".dropdown-item, #pbs-tab, #dates-histogram-tab").on("click", function () {
+     $(".dropdown-item, #pbs-tab, #dates-histogram-tab, #rsd-explain-tab").on("click", function () {
          $("#navbarSupportedContent").collapse('hide');
      });
  });

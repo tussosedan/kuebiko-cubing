@@ -41,7 +41,7 @@
                                     <u>Note</u>: ZYX Timer data doesn't include dates">ZYX Timer</abbr>
                 </div>
                 <br/>
-                <div class="accordion col-12 col-sm-10 col-md-6 mx-auto" id="optionsAccordion">
+                <div class="accordion col-12 col-sm-10 col-md-8 mx-auto" id="optionsAccordion">
                     <div class="card rounded">
                         <div class="card-header" id="headingOne">
                             <h5 class="mb-0">
@@ -82,6 +82,10 @@
                                         <label class="btn btn-light">
                                             <input type="radio" name="secondary-y-axis" id="secondary-y-axis-subx"
                                                    value="subx" autocomplete="off"> Sub-X %
+                                        </label>
+                                        <label class="btn btn-light">
+                                            <input type="radio" name="secondary-y-axis" id="secondary-y-axis-rsd"
+                                                   value="rsd" autocomplete="off"> RSD
                                         </label>
                                     </div>
                                 </div>
@@ -237,7 +241,8 @@ function loading() {
 "Solving XXCross every time",
 "Generating memes",
 "Reverse engineering zeroing",
-"Arguing about what sub-X means"
+"Arguing about what sub-X means",
+"Stealing some luck from Yushen Du"
                      ];
 
     var randText = shuffle(loadingText);
@@ -251,6 +256,7 @@ function loading() {
         });
         }, 4 * 1000)
 }
+
 
 
 </script>

@@ -3,7 +3,7 @@ from math import floor, ceil, isnan
 
 from numba import jit
 from numpy import sort, repeat, NaN, array, all, select
-from pandas import read_csv, to_datetime, concat, notnull, DataFrame, Series, cut
+from pandas import read_csv, to_datetime, concat, notnull, DataFrame, Series, cut, set_option
 
 from plotly.offline import plot
 import plotly.graph_objs as go
@@ -11,6 +11,7 @@ import plotly.graph_objs as go
 import json
 import re
 import dateparser
+from html import escape
 
 from collections import OrderedDict
 
@@ -40,12 +41,19 @@ def round_half_up(n):
 def rolling_trimmed_mean(data, window_size, outliers_to_trim):
     x = sort(data[:window_size], order=['IsDNF', 'TimeCentiSec'])
     means = repeat(NaN, len(data))
+    rsd = repeat(NaN, len(data))
 
     for i in range(window_size, len(data) + 1):
         if x[window_size - outliers_to_trim - 1]['IsDNF'] == 1:
             means[i - 1] = NaN
         else:
-            means[i - 1] = round_half_up(x[outliers_to_trim: window_size - outliers_to_trim]['TimeCentiSec'].mean())
+            counting_solves = x[outliers_to_trim: window_size - outliers_to_trim]['TimeCentiSec']
+            counting_solves_mean = counting_solves.mean()
+            means[i - 1] = round_half_up(counting_solves_mean)
+            # consistency score = mean / stdev (both trimmed)
+            rsd_std = counting_solves.std()
+            if rsd_std > 0:
+                rsd[i - 1] = round(rsd_std / counting_solves_mean, 3)
 
         if i != len(data):
             idx_old = binary_search_2d(x, data[i - window_size], window_size)
@@ -59,7 +67,7 @@ def rolling_trimmed_mean(data, window_size, outliers_to_trim):
             else:
                 x[idx_new] = data[i]
 
-    return means
+    return means, rsd
 
 
 def calculate_and_store_running_ao(solves_data, puzzle, category, ao_len):
@@ -74,8 +82,10 @@ def calculate_and_store_running_ao(solves_data, puzzle, category, ao_len):
         outliers_to_trim = ceil(ao_len * (5 / 100))
         prefix = 'ao'
 
-    means = rolling_trimmed_mean(solves_data_part_array, ao_len, outliers_to_trim)
+    means, rsd = rolling_trimmed_mean(solves_data_part_array, ao_len, outliers_to_trim)
+
     solves_data.loc[solves_data_part.index, prefix + str(ao_len)] = means / 100
+    solves_data.loc[solves_data_part.index, 'rsd' + str(ao_len)] = rsd
 
 
 def get_subx_threshold(solves_data, puzzle, category):
@@ -150,7 +160,17 @@ def represents_int(s):
         return False
 
 
-def get_pb_progression(solves_data, puzzle, category, col_name, has_dates, timezone):
+def get_pb_progression(solves_data, puzzle, category, ao_len, has_dates, timezone):
+    if ao_len == 1:
+        series = 'single'
+        series_rsd = None
+    elif ao_len == 3:
+        series = 'mo3'
+        series_rsd = 'rsd3'
+    else:
+        series = 'ao' + str(ao_len)
+        series_rsd = 'rsd' + str(ao_len)
+
     solves_data_part = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)]
     # create a column for solve num
     solves_data_part.reset_index(inplace=True, drop=True)
@@ -158,9 +178,12 @@ def get_pb_progression(solves_data, puzzle, category, col_name, has_dates, timez
     solves_data_part.reset_index(inplace=True)
 
     if has_dates:
-        solves_data_pb = solves_data_part[(solves_data_part[col_name + '_cummin'].diff() != 0)
-                                          & (solves_data_part[col_name + '_cummin'].notnull())][
-            ['index', 'SolveDatetime', col_name]]
+        column_list = ['index', 'SolveDatetime', series]
+        if ao_len > 1:
+            column_list.append(series_rsd)
+
+        solves_data_pb = solves_data_part[(solves_data_part[series + '_cummin'].diff() != 0)
+                                          & (solves_data_part[series + '_cummin'].notnull())][column_list]
 
         solves_data_pb['PB For Time'] = solves_data_pb['SolveDatetime'].diff(periods=-1) * -1
 
@@ -173,9 +196,12 @@ def get_pb_progression(solves_data, puzzle, category, col_name, has_dates, timez
 
         solves_data_pb.rename(inplace=True, columns={"SolveDatetime": "Date & Time"})
     else:
-        solves_data_pb = solves_data_part[(solves_data_part[col_name + '_cummin'].diff() != 0)
-                                          & (solves_data_part[col_name + '_cummin'].notnull())][
-            ['index', col_name]]
+        column_list = ['index', series]
+        if ao_len > 1:
+            column_list.append(series_rsd)
+
+        solves_data_pb = solves_data_part[(solves_data_part[series + '_cummin'].diff() != 0)
+                                          & (solves_data_part[series + '_cummin'].notnull())][column_list]
 
     solves_data_pb['PB For # Solves'] = (solves_data_pb['index'].diff(periods=-1) * -1).dropna().apply(
         lambda x: str(int(x)))
@@ -184,7 +210,7 @@ def get_pb_progression(solves_data, puzzle, category, col_name, has_dates, timez
     solves_data_pb.loc[last_index.index, 'PB For # Solves'] = str(
         solves_data_part.iloc[-1]['index'] - last_index.iloc[0]) + ' and counting'
 
-    solves_data_pb['PB ' + col_name] = solves_data_pb[col_name].apply(sec2dtstr)
+    solves_data_pb['PB ' + series] = solves_data_pb[series].apply(sec2dtstr)
     solves_data_pb.rename(inplace=True, columns={"index": "Solve #"})
 
     return solves_data_pb
@@ -193,20 +219,40 @@ def get_pb_progression(solves_data, puzzle, category, col_name, has_dates, timez
 def get_all_pb_progressions(solves_data, puzzle, category, has_dates, timezone):
     solves_data_part = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)]
     res = OrderedDict()
-    for series in 'single', 'mo3', 'ao5', 'ao12', 'ao50', 'ao100', 'ao1000':
+    for ao_len in (1, 3, 5, 12, 50, 100, 1000):
+        if ao_len == 1:
+            series = 'single'
+        elif ao_len == 3:
+            series = 'mo3'
+        else:
+            series = 'ao' + str(ao_len)
+
         if not solves_data_part[series].isnull().all():
-            res[series] = get_pb_progression(solves_data, puzzle, category, series, has_dates, timezone)
+            res[ao_len] = get_pb_progression(solves_data, puzzle, category, ao_len, has_dates, timezone)
     return res
 
 
 def generate_pbs_display(pb_progressions, has_dates):
     res = OrderedDict()
 
-    for series, pbs in pb_progressions.items():
+    for ao_len, pbs in pb_progressions.items():
+        if ao_len == 1:
+            series = 'single'
+            series_rsd = None
+        elif ao_len == 3:
+            series = 'mo3'
+            series_rsd = 'rsd3'
+        else:
+            series = 'ao' + str(ao_len)
+            series_rsd = 'rsd' + str(ao_len)
+
         pbs = pbs.iloc[::-1]
         if has_dates:
-            pbs_display = pbs[['PB ' + series, 'Date & Time', 'PB For Time', 'Solve #',
-                               'PB For # Solves']][:50]
+            column_list = ['PB ' + series, 'Date & Time', 'PB For Time', 'Solve #', 'PB For # Solves']
+            if ao_len > 1:
+                column_list.append(series_rsd)
+
+            pbs_display = pbs[column_list][:50]
 
             if pbs_display['Date & Time'].isnull().all():
                 pbs_display.drop(labels='Date & Time', axis='columns', inplace=True)
@@ -218,22 +264,45 @@ def generate_pbs_display(pb_progressions, has_dates):
             else:
                 pbs_display['PB For Time'] = pbs_display['PB For Time'].fillna(value='--')
         else:
-            pbs_display = pbs[['PB ' + series, 'Solve #', 'PB For # Solves']][:50]
+            column_list = ['PB ' + series, 'Solve #', 'PB For # Solves']
+            if ao_len > 1:
+                column_list.append(series_rsd)
+
+            pbs_display = pbs[column_list][:50]
+
+        if ao_len > 1:
+            pbs_display[series_rsd] = pbs_display[series_rsd].apply(lambda x: '{:.1%}'.format(x))
 
         res[series] = pbs_display
 
     return res
 
 
-def get_top_solves(solves_data_part, col_name, top_n, has_dates):
-    if has_dates and not solves_data_part['Date & Time'].isnull().all():
-        column_list = [col_name, 'Date & Time', 'Solve #']
+def get_top_solves(solves_data_part, ao_len, top_n, has_dates):
+    if ao_len == 1:
+        series = 'single'
+        series_rsd = None
+    elif ao_len == 3:
+        series = 'mo3'
+        series_rsd = 'rsd3'
     else:
-        column_list = [col_name, 'Solve #']
+        series = 'ao' + str(ao_len)
+        series_rsd = 'rsd' + str(ao_len)
 
-    top_solves = solves_data_part[(solves_data_part['Penalty'] != 2) & (solves_data_part[col_name].notnull())][
-        column_list].sort_values([col_name, 'Solve #']).head(top_n)
-    top_solves[col_name] = top_solves[col_name].apply(sec2dtstr)
+    if has_dates and not solves_data_part['Date & Time'].isnull().all():
+        column_list = [series, 'Date & Time', 'Solve #']
+    else:
+        column_list = [series, 'Solve #']
+
+    if ao_len > 1:
+        column_list.append(series_rsd)
+
+    top_solves = solves_data_part[(solves_data_part['Penalty'] != 2) & (solves_data_part[series].notnull())][
+        column_list].sort_values([series, 'Solve #']).head(top_n)
+    top_solves[series] = top_solves[series].apply(sec2dtstr)
+
+    if ao_len > 1:
+        top_solves[series_rsd] = top_solves[series_rsd].apply(lambda x: '{:.1%}'.format(x))
 
     if ('Date & Time' in column_list) and top_solves['Date & Time'].isnull().all():
         top_solves.drop(labels='Date & Time', axis='columns', inplace=True)
@@ -245,7 +314,7 @@ def get_top_solves(solves_data_part, col_name, top_n, has_dates):
     top_solves.reset_index(inplace=True)
     top_solves.rename(inplace=True, columns={"index": "Rank"})
 
-    if col_name == 'single':
+    if ao_len == 1:
         top_solves.rename(inplace=True, columns={'single': 'Single'})
 
     return top_solves
@@ -265,9 +334,15 @@ def get_all_top_solves(solves_data, puzzle, category, has_dates):
         solves_data_part.rename(inplace=True, columns={"SolveDatetime": "Date & Time"})
 
     res = OrderedDict()
-    for series in 'single', 'mo3', 'ao5', 'ao12', 'ao50', 'ao100', 'ao1000':
+    for ao_len in (1, 3, 5, 12, 50, 100, 1000):
+        if ao_len == 1:
+            series = 'single'
+        elif ao_len == 3:
+            series = 'mo3'
+        else:
+            series = 'ao' + str(ao_len)
         if not solves_data_part[series].isnull().all():
-            res[series] = get_top_solves(solves_data_part, series, top_n, has_dates)
+            res[series] = get_top_solves(solves_data_part, ao_len, top_n, has_dates)
     return res
 
 
@@ -305,10 +380,55 @@ def get_all_solves_details(solves_data, has_dates, timezone, chart_by, secondary
     return resdict
 
 
+def create_pbs_display_value(time, date=None, rsd=None):
+    if notnull(date):
+        date = date.date()
+    else:
+        date = None
+
+    res = sec2dtstr(time)
+    if date or rsd:
+        res += '<span class="small">'
+        if date:
+            res += " <br/> " + str(date)
+        if rsd:
+            if date:
+                res += " | "
+            else:
+                res += " <br/> "
+            res += "RSD: " + '{:.1%}'.format(rsd)
+        res += '</span>'
+    return res
+
+
 def get_overall_pbs(solves_data):
-    pbs = solves_data[solves_data['Penalty'] != 2][
+    min_idx = solves_data[solves_data['Penalty'] != 2][
         ['Puzzle', 'Category', 'single', 'mo3', 'ao5', 'ao12', 'ao50', 'ao100', 'ao1000']]. \
-        groupby(['Puzzle', 'Category']).min().applymap(sec2dtstr)
+        groupby(['Puzzle', 'Category']).idxmin()
+
+    pbs = DataFrame()
+
+    single_pbs = solves_data.loc[min_idx['single'].dropna()][
+        ['Puzzle', 'Category', 'single', 'SolveDatetime']].set_index(
+        ['Puzzle', 'Category'])
+    pbs['single'] = single_pbs.apply(
+        lambda row: create_pbs_display_value(row['single'], row['SolveDatetime']), axis=1)
+
+    for ao_len in (3, 5, 12, 50, 100, 1000):
+        if ao_len == 3:
+            prefix = 'mo'
+        else:
+            prefix = 'ao'
+        ao_len_str = str(ao_len)
+        ao_pbs = solves_data.loc[min_idx[prefix + ao_len_str].dropna()][
+            ['Puzzle', 'Category', prefix + ao_len_str, 'rsd' + ao_len_str, 'SolveDatetime']].set_index(
+            ['Puzzle', 'Category'])
+        if ao_pbs.size > 0:
+            pbs[prefix + ao_len_str] = ao_pbs.apply(
+                lambda row: create_pbs_display_value(row[prefix + ao_len_str], row['SolveDatetime'],
+                                                     row['rsd' + ao_len_str]), axis=1)
+        else:
+            pbs[prefix + ao_len_str] = NaN
 
     counts = solves_data.groupby(['Puzzle', 'Category']).size().rename('#')
 
@@ -316,6 +436,9 @@ def get_overall_pbs(solves_data):
 
     pbs_with_count = pbs_with_count.reindex(
         sorted(pbs_with_count.index, key=lambda s: (str(s[0]).casefold(), str(s[1]).casefold())))
+
+    # escape puzzle and category names for html, as to_html escaping is now disabled for this table to use span
+    pbs_with_count.index = pbs_with_count.index.map(lambda tp: tuple(escape(str(x)) for x in tp))
 
     if all(pbs_with_count.index.levels[0] == 'Sessions'):
         # no need to display if no puzzle data
@@ -365,11 +488,11 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
               'ao50': 'rgba(219, 64, 82, 1.0)',
               'ao100': 'rgba(0, 128, 128, 1.0)',
               'ao1000': 'blue',
-              'cs5': 'grey',
-              'cs12': 'rgba(128, 177, 211, 0.8999999999999999)',
-              'cs50': 'rgba(251, 128, 114, 1.0)',
-              'cs100': 'rgba(255, 153, 51, 1.0)',
-              'cs1000': 'rgba(128, 177, 211, 1.0)',
+              'rsd5': 'grey',
+              'rsd12': 'rgba(128, 177, 211, 0.8999999999999999)',
+              'rsd50': 'rgba(251, 128, 114, 1.0)',
+              'rsd100': 'rgba(255, 153, 51, 1.0)',
+              'rsd1000': 'rgba(128, 177, 211, 1.0)',
               'subx5': 'grey',
               'subx12': 'rgba(128, 177, 211, 0.8999999999999999)',
               'subx50': 'rgba(251, 128, 114, 1.0)',
@@ -380,16 +503,21 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
     over_60 = False  # for deciding on tickformat
     for ao_len in (1, 3, 5, 12, 50, 100, 1000):
         series_subx = None
+        series_rsd = None
         if ao_len == 1:
             series = 'single'
         elif ao_len == 3:
             series = 'mo3'
             if secondary_y_axis == 'subx':
                 series_subx = 'subx3'
+            elif secondary_y_axis == 'rsd':
+                series_rsd = 'rsd3'
         else:
             series = 'ao' + str(ao_len)
             if secondary_y_axis == 'subx':
                 series_subx = 'subx' + str(ao_len)
+            elif secondary_y_axis == 'rsd':
+                series_rsd = 'rsd' + str(ao_len)
 
         if not plot_data[series].isnull().all():
             marker = {'size': 2, 'color': 'red'}
@@ -417,9 +545,15 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
                 if secondary_y_axis == 'subx':
                     y2_data = plot_data[series_subx]
                     y2_name = "% sub-" + sec2dtstr(subx_thresholds[(puzzle, category)]) + " " + series
+                    y2_colors = series_subx
+                elif secondary_y_axis == 'rsd':
+                    y2_data = plot_data[series_rsd]
+                    y2_name = series_rsd
+                    y2_colors = series_rsd
                 else:
                     y2_data = []
                     y2_name = ''
+                    y2_colors = ''
 
                 data.append(go.Scatter(
                     x=data_plot_x,
@@ -430,11 +564,11 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
                     legendgroup=series,
                     showlegend=False,
                     visible='legendonly',
-                    line={'color': colors.get(series_subx, 'black'),
+                    line={'color': colors.get(y2_colors, 'black'),
                           'width': 1.3}
                 ))
 
-            pbs = pb_progressions[series]
+            pbs = pb_progressions[ao_len]
 
             # add an extra point for continuing the PB line until the last solve
             plot_last_index = plot_data.index.values[-1]
@@ -483,12 +617,12 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
         layout_xaxis['domain'] = [0, 0.97]
         if secondary_y_axis == 'subx':
             yaxis2_title = "% sub-" + sec2dtstr(subx_thresholds[(puzzle, category)])
-            # yes series_subx is outside the loop, doesn't matter as they're all the same currently
-
             yaxis2_tickformat = '.1%'
-
             yaxis2_range = [0, 1]
             yaxis2_fixedrange = True
+        elif secondary_y_axis == 'rsd':
+            yaxis2_title = 'RSD'
+            yaxis2_tickformat = '.1%'
 
     layout = go.Layout(margin={'l': 50,
                                'r': 50,
@@ -550,34 +684,38 @@ def generate_histogram(plot_data_raw, name):
 
 def get_histograms_plot(solves_data, puzzle, category):
     data = list()
-    ao = dict()
+    annotations = dict()
     solves_data_part = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)]
     solves_count = len(solves_data_part)
 
     plot_data_raw = solves_data_part['single']
     data.append(generate_histogram(plot_data_raw, 'all'))
-    ao['all'] = 'all ' + str(solves_count) + ' solves'
+    annotations['all'] = 'all ' + str(solves_count) + ' solves'
 
     if solves_count > 100:
-        plot_data_raw = solves_data_part[['single', 'ao100']][-100:]
+        plot_data_raw = solves_data_part[['single', 'ao100', 'rsd100']][-100:]
         data.append(generate_histogram(plot_data_raw['single'], 'last 100'))
-        ao['last 100'] = 'last ao100: ' + str(plot_data_raw['ao100'].iloc[-1])
+        annotations['last 100'] = 'last ao100: ' + str(plot_data_raw['ao100'].iloc[-1]) + \
+                                  '<br>rsd100: ' + '{:.1%}'.format(plot_data_raw['rsd100'].iloc[-1])
 
-    part_reindexed = solves_data_part[['single', 'ao100', 'ao1000']].reset_index()
+    part_reindexed = solves_data_part[['single', 'ao100', 'ao1000', 'rsd100', 'rsd1000']].reset_index()
     idxmin = part_reindexed['ao100'].idxmin()
     if notnull(idxmin):
         data.append(generate_histogram(part_reindexed['single'][idxmin + 1 - 100: idxmin + 1], 'PB ao100'))
-        ao['PB ao100'] = 'PB ao100: ' + str(part_reindexed['ao100'][idxmin])
+        annotations['PB ao100'] = 'PB ao100: ' + str(part_reindexed['ao100'][idxmin]) + \
+                                  '<br>rsd100: ' + '{:.1%}'.format(part_reindexed['rsd100'][idxmin])
 
     if solves_count > 1000:
-        plot_data_raw = solves_data_part[['single', 'ao1000']][-1000:]
+        plot_data_raw = solves_data_part[['single', 'ao1000', 'rsd1000']][-1000:]
         data.append(generate_histogram(plot_data_raw['single'], 'last 1000'))
-        ao['last 1000'] = 'last ao1000: ' + str(plot_data_raw['ao1000'].iloc[-1])
+        annotations['last 1000'] = 'last ao1000: ' + str(plot_data_raw['ao1000'].iloc[-1]) + \
+                                   '<br>rsd1000: ' + '{:.1%}'.format(plot_data_raw['rsd1000'].iloc[-1])
 
     idxmin = part_reindexed['ao1000'].idxmin()
     if notnull(idxmin):
         data.append(generate_histogram(part_reindexed['single'][idxmin + 1 - 1000: idxmin + 1], 'PB ao1000'))
-        ao['PB ao1000'] = 'PB ao1000: ' + str(part_reindexed['ao1000'][idxmin])
+        annotations['PB ao1000'] = 'PB ao1000: ' + str(part_reindexed['ao1000'][idxmin]) + \
+                                   '<br>rsd1000: ' + '{:.1%}'.format(part_reindexed['rsd1000'][idxmin])
 
     data[0].visible = True
 
@@ -591,7 +729,8 @@ def get_histograms_plot(solves_data, puzzle, category):
                                                         y=1.05,
                                                         yref='paper',
                                                         showarrow=False,
-                                                        text=ao.get(bar['name'], ''))]}],
+                                                        align='left',
+                                                        text=annotations.get(bar['name'], ''))]}],
                             label=bar['name'],
                             method='update'))
 
@@ -607,7 +746,7 @@ def get_histograms_plot(solves_data, puzzle, category):
                                          y=1.05,
                                          yref='paper',
                                          showarrow=False,
-                                         text=ao.get('all'))]
+                                         text=annotations.get('all'))]
                        )
 
     updatemenus = list([
@@ -994,11 +1133,16 @@ def drop_all_dnf_categories(solves_data):
 
 
 def process_data(file, chart_by, secondary_y_axis, subx_threshold_mode, subx_override, day_end_hour, timezone):
+    set_option('display.max_colwidth', -1)
+
     # timezone could be a tz name string, or an offset in minutes
     if represents_int(timezone):
         timezone = int(timezone) * 60  # need it in seconds for tz_convert
 
     solves_data, has_dates, timer_type = create_dataframe(file, timezone)
+
+    if not has_dates:
+        solves_data['SolveDatetime'] = NaN
 
     solves_data['TimeCentiSec'] = (solves_data['Time(millis)'] / 10).astype(int)
 
