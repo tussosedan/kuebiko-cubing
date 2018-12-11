@@ -199,6 +199,9 @@ def get_top_solves(solves_data_part, col_name, top_n, has_dates):
     top_solves = solves_data_part[(solves_data_part['Penalty'] != 2) & (solves_data_part[col_name].notnull())][
         column_list].sort_values([col_name, 'Solve #']).head(top_n)
     top_solves[col_name] = top_solves[col_name].apply(sec2dtstr)
+
+    if ('Date & Time' in column_list) and top_solves['Date & Time'].isnull().all():
+        top_solves.drop(labels='Date & Time', axis='columns', inplace=True)
     top_solves.fillna(value='--', inplace=True)
 
     return top_solves
