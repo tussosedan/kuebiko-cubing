@@ -294,8 +294,19 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
     if has_dates and plot_data['SolveDatetime'].isnull().all():
         has_dates = False
 
+    annotations = []
     if has_dates:
         data_plot_x = plot_data['SolveDatetime']
+        count_null_dates = plot_data['SolveDatetime'].isnull().sum()
+        if count_null_dates > 0:
+            annotations.append(dict(x=0,
+                                    xref='paper',
+                                    y=1.05,
+                                    yref='paper',
+                                    showarrow=False,
+                                    text=f'Not showing {count_null_dates} solves that lack dates',
+                                    hovertext='Choose the "Chart by Solve #" option <br>'
+                                              'when uploading the file to chart all solves'))
     else:
         plot_data.reset_index(inplace=True, drop=True)
         data_plot_x = plot_data.index + 1
@@ -369,7 +380,8 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
                                't': 50,
                                'pad': 4
                                },
-                       yaxis={'tickformat': '%M:%S'})
+                       yaxis={'tickformat': '%M:%S'},
+                       annotations=annotations)
 
     fig = dict(data=data, layout=layout)
 
@@ -492,6 +504,16 @@ def generate_dates_histogram(solves_data, group_date_str, tickformat, dtick):
         [solves_data.SolveDatetime.dropna().dt.strftime(group_date_str), solves_data.Puzzle, solves_data.Category])[
         'Puzzle'].count().rename('#')
 
+    annotations = []
+    count_null_dates = solves_data['SolveDatetime'].isnull().sum()
+    if count_null_dates > 0:
+        annotations.append(dict(x=0,
+                                xref='paper',
+                                y=1.05,
+                                yref='paper',
+                                showarrow=False,
+                                text=f'Not showing {count_null_dates} solves that lack dates'))
+
     renamed_puzzles = [rename_puzzle(puz) for puz in solves_grouped.index.levels[1]]
     solves_grouped.index = solves_grouped.index.set_levels(renamed_puzzles, level=1)
     plot_data = solves_grouped.unstack([1, 2])
@@ -516,7 +538,8 @@ def generate_dates_histogram(solves_data, group_date_str, tickformat, dtick):
                 'pad': 4
                 },
         xaxis={'tickformat': tickformat, 'dtick': dtick},
-        legend={'traceorder': 'normal'}
+        legend={'traceorder': 'normal'},
+        annotations=annotations
     )
     fig = dict(data=data, layout=layout)
 
