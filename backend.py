@@ -518,7 +518,7 @@ def generate_dates_histogram(solves_data, group_date_str, tickformat, dtick):
     solves_grouped.index = solves_grouped.index.set_levels(renamed_puzzles, level=1)
     plot_data = solves_grouped.unstack([1, 2])
     # noinspection PyUnresolvedReferences
-    plot_data.columns = [' '.join(col).strip() for col in plot_data.columns.values]
+    plot_data.columns = [' '.join(str(col)).strip() for col in plot_data.columns.values]
 
     data = []
     for col in sorted(plot_data.columns, key=lambda s: str(s).casefold()):
