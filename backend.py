@@ -75,8 +75,43 @@ def calculate_and_store_running_ao(solves_data, puzzle, category, ao_len):
         prefix = 'ao'
 
     means = rolling_trimmed_mean(solves_data_part_array, ao_len, outliers_to_trim)
-
     solves_data.loc[solves_data_part.index, prefix + str(ao_len)] = means / 100
+
+
+def get_subx_threshold(solves_data, puzzle, category):
+    solves_data_part = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)][[
+        'single', 'ao100', 'ao1000']]
+
+    last_notnull_index = solves_data_part['ao1000'].last_valid_index()
+    if notnull(last_notnull_index):
+        subx_base = solves_data.loc[last_notnull_index, 'ao1000']
+    else:
+        last_notnull_index = solves_data_part['ao100'].last_valid_index()
+        if notnull(last_notnull_index):
+            subx_base = solves_data.loc[last_notnull_index, 'ao100']
+        else:
+            subx_base = solves_data_part['single'].median()
+        if isnan(subx_base):
+            subx_base = 20
+
+    subx = int(subx_base / 5) * 5  # round down to nearest multiple of 5
+    if 6 < subx_base <= 10:
+        subx = int(subx_base) - 1  # the going gets tough below sub-10
+
+    if subx == 0:
+        subx = 0.5
+
+    return subx
+
+
+# noinspection PyUnresolvedReferences
+def calculate_and_store_running_subx(solves_data, puzzle, category, ao_len, subx_threshold):
+    solves_data_part = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)][[
+        'single']]
+
+    solves_data.loc[solves_data_part.index, 'subx' + str(ao_len)] = \
+        solves_data_part[ao_len - 1:].rolling(ao_len, min_periods=0).apply(
+            lambda ar: ((ar < subx_threshold).sum()) / ao_len, raw=True)['single']
 
 
 def sec2dtstr(seconds):
@@ -235,7 +270,7 @@ def rename_puzzle(puz):
         return puz
 
 
-def get_all_solves_details(solves_data, has_dates, timezone, chart_by):
+def get_all_solves_details(solves_data, has_dates, timezone, chart_by, secondary_y_axis, subx_thresholds):
     # generate a nested dict puzzle -> category -> pb progression df
     puzcats = {k: sorted(g['Category'].tolist(), key=lambda s: str(s).casefold())
                for k, g in solves_data[['Puzzle', 'Category']].drop_duplicates().groupby('Puzzle')}
@@ -249,7 +284,8 @@ def get_all_solves_details(solves_data, has_dates, timezone, chart_by):
 
             top_solves = get_all_top_solves(solves_data, puz, cat, has_dates)
 
-            solves_plot = get_solves_plot(solves_data, puz, cat, has_dates, chart_by, pb_progressions)
+            solves_plot = get_solves_plot(solves_data, puz, cat, has_dates, chart_by, pb_progressions, secondary_y_axis,
+                                          subx_thresholds)
             histograms_plot = get_histograms_plot(solves_data, puz, cat)
 
             catdict[cat] = pbs_display, solves_plot, histograms_plot, top_solves
@@ -284,7 +320,8 @@ def get_overall_pbs(solves_data):
     return pbs_with_count
 
 
-def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progressions):
+def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progressions, secondary_y_axis,
+                    subx_thresholds):
     plot_data = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)]
 
     if chart_by == 'chart-by-solve-num':
@@ -318,10 +355,33 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
               'ao12': 'rgba(128, 0, 128, 1.0)',
               'ao50': 'rgba(219, 64, 82, 1.0)',
               'ao100': 'rgba(0, 128, 128, 1.0)',
-              'ao1000': 'blue'}
+              'ao1000': 'blue',
+              'cs5': 'grey',
+              'cs12': 'rgba(128, 177, 211, 0.8999999999999999)',
+              'cs50': 'rgba(251, 128, 114, 1.0)',
+              'cs100': 'rgba(255, 153, 51, 1.0)',
+              'cs1000': 'rgba(128, 177, 211, 1.0)',
+              'subx5': 'grey',
+              'subx12': 'rgba(128, 177, 211, 0.8999999999999999)',
+              'subx50': 'rgba(251, 128, 114, 1.0)',
+              'subx100': 'rgba(255, 153, 51, 1.0)',
+              'subx1000': 'rgba(128, 177, 211, 1.0)'
+              }
 
     over_60 = False  # for deciding on tickformat
-    for series in 'single', 'mo3', 'ao5', 'ao12', 'ao50', 'ao100', 'ao1000':
+    for ao_len in (1, 3, 5, 12, 50, 100, 1000):
+        series_subx = None
+        if ao_len == 1:
+            series = 'single'
+        elif ao_len == 3:
+            series = 'mo3'
+            if secondary_y_axis == 'subx':
+                series_subx = 'subx3'
+        else:
+            series = 'ao' + str(ao_len)
+            if secondary_y_axis == 'subx':
+                series_subx = 'subx' + str(ao_len)
+
         if not plot_data[series].isnull().all():
             marker = {'size': 2, 'color': 'red'}
 
@@ -338,10 +398,32 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
                 hoverinfo="x+name+text",
                 mode=mode,
                 marker=marker,
+                legendgroup=series,
                 visible='legendonly',
                 line={'color': colors.get(series, 'black'),
                       'width': 1.3}
             ))
+
+            if secondary_y_axis and (ao_len > 1):
+                if secondary_y_axis == 'subx':
+                    y2_data = plot_data[series_subx]
+                    y2_name = "% sub-" + sec2dtstr(subx_thresholds[(puzzle, category)]) + " " + series
+                else:
+                    y2_data = []
+                    y2_name = ''
+
+                data.append(go.Scatter(
+                    x=data_plot_x,
+                    y=y2_data,
+                    yaxis='y2',
+                    name=y2_name,
+                    mode='lines',
+                    legendgroup=series,
+                    showlegend=False,
+                    visible='legendonly',
+                    line={'color': colors.get(series_subx, 'black'),
+                          'width': 1.3}
+                ))
 
             pbs = pb_progressions[series]
 
@@ -383,23 +465,54 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
     else:
         yaxis_tickformat = '%M:%S'
 
+    layout_xaxis = dict()
+    yaxis2_title = None
+    yaxis2_tickformat = None
+    yaxis2_range = None
+    yaxis2_fixedrange = False
+    if secondary_y_axis:
+        layout_xaxis['domain'] = [0, 0.97]
+        if secondary_y_axis == 'subx':
+            yaxis2_title = "% sub-" + sec2dtstr(subx_thresholds[(puzzle, category)])
+            # yes series_subx is outside the loop, doesn't matter as they're all the same currently
+
+            yaxis2_tickformat = '.1%'
+
+            yaxis2_range = [0, 1]
+            yaxis2_fixedrange = True
+
     layout = go.Layout(margin={'l': 50,
                                'r': 50,
                                'b': 50,
                                't': 50,
-                               'pad': 4
+                               'pad': 0
                                },
                        yaxis={'tickformat': yaxis_tickformat},
+                       yaxis2={'side': 'right',
+                               'overlaying': 'y',
+                               'position': 0.97,
+                               'title': yaxis2_title,
+                               'tickformat': yaxis2_tickformat,
+                               'range': yaxis2_range,
+                               'fixedrange': yaxis2_fixedrange},
+                       legend={'tracegroupgap': 0},
+                       xaxis=layout_xaxis,
                        annotations=annotations)
 
     fig = dict(data=data, layout=layout)
 
     # display only the singles and the two largest aoX
     fig['data'][0].visible = True
-    if len(fig['data']) >= 3:
+    if len(fig['data']) >= 4:
         fig['data'][-2].visible = True
-    if len(fig['data']) >= 5:
-        fig['data'][-4].visible = True
+        if secondary_y_axis:
+            fig['data'][-3].visible = True
+    if len(fig['data']) >= 6:
+        if secondary_y_axis:
+            fig['data'][-5].visible = True
+            fig['data'][-6].visible = True
+        else:
+            fig['data'][-4].visible = True
 
     config = {'scrollZoom': True}
 
@@ -529,6 +642,7 @@ def generate_dates_histogram(solves_data, group_date_str, tickformat, dtick):
 
     # noinspection PyUnresolvedReferences
     if plot_data.columns.levels[0][0] == 'Sessions':
+        # noinspection PyUnresolvedReferences
         plot_data.columns = [str(col[1]).strip() for col in plot_data.columns.values]
     else:
         # noinspection PyUnresolvedReferences
@@ -865,7 +979,7 @@ def drop_all_dnf_categories(solves_data):
     return solves_data[~solves_grouped_index.isin(all_dnf_index)]
 
 
-def process_data(file, chart_by, timezone):
+def process_data(file, chart_by, secondary_y_axis, subx_threshold_mode, subx_override, timezone):
     # timezone could be a tz name string, or an offset in minutes
     if represents_int(timezone):
         timezone = int(timezone) * 60  # need it in seconds for tz_convert
@@ -881,9 +995,21 @@ def process_data(file, chart_by, timezone):
 
     solves_data = drop_all_dnf_categories(solves_data)
 
+    subx_thresholds = dict()
     for idx, puzzle, category in solves_data[['Puzzle', 'Category']].drop_duplicates().itertuples():
         for ao_len in (3, 5, 12, 50, 100, 1000):
             calculate_and_store_running_ao(solves_data, puzzle, category, ao_len)
+        if secondary_y_axis == 'subx':
+            if subx_threshold_mode == 'auto':
+                subx_threshold = get_subx_threshold(solves_data, puzzle, category)
+            else:
+                try:
+                    subx_threshold = float(subx_override)
+                except ValueError:
+                    subx_threshold = get_subx_threshold(solves_data, puzzle, category)
+            subx_thresholds[(puzzle, category)] = subx_threshold
+            for ao_len in (3, 5, 12, 50, 100, 1000):
+                calculate_and_store_running_subx(solves_data, puzzle, category, ao_len, subx_threshold)
 
     for series in 'single', 'mo3', 'ao5', 'ao12', 'ao50', 'ao100', 'ao1000':
         solves_data[series + '_str'] = solves_data[series][notnull(solves_data[series])].apply(sec2dtstr)
@@ -902,7 +1028,8 @@ def process_data(file, chart_by, timezone):
             ['single_cummin', 'mo3_cummin', 'ao5_cummin', 'ao12_cummin',
              'ao50_cummin', 'ao100_cummin', 'ao1000_cummin']].fillna(method='ffill')
 
-    solves_details = get_all_solves_details(solves_data, has_dates, timezone, chart_by)
+    solves_details = get_all_solves_details(solves_data, has_dates, timezone, chart_by, secondary_y_axis,
+                                            subx_thresholds)
     overall_pbs = get_overall_pbs(solves_data)
     if has_dates:
         solves_by_dates = get_solves_by_dates(solves_data)

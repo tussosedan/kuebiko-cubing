@@ -50,12 +50,18 @@ def index():
                 file_to_send = BytesIO(textdata.encode())
 
             chart_by = request.form.get('chart-by', 'chart-by-dates')
+            secondary_y_axis = request.form.get('secondary-y-axis', 'none')
+            subx_threshold_mode = request.form.get('subx-threshold', 'auto')
+            subx_override = request.form.get('subx-override', 'none')
             timezone = request.form.get('tz', 'UTC')
+
+            if secondary_y_axis == 'none':
+                secondary_y_axis = None
 
             # noinspection PyBroadException
             try:
-                solves_details, overall_pbs, solves_by_dates, timer_type, datalen = process_data(file_to_send, chart_by,
-                                                                                                 timezone)
+                solves_details, overall_pbs, solves_by_dates, timer_type, datalen = \
+                    process_data(file_to_send, chart_by, secondary_y_axis, subx_threshold_mode, subx_override, timezone)
                 return render_template("data.html", solves_details=solves_details, overall_pbs=overall_pbs,
                                        solves_by_dates=solves_by_dates, timer_type=timer_type, datalen=datalen)
             except NotImplementedError:

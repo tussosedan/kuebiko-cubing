@@ -20,7 +20,8 @@
                                     <u>Note</u>: cstimer saves dates starting December 2018">cstimer</abbr>,
                     <abbr data-toggle="tooltip" data-placement="bottom" data-html="true" class="text-nowrap"
                           title="Settings > Data ><br/> Block Keeper > Export<br/>
-                                    <u>Note</u>: Block Keeper saves dates starting v1.3.1 (January 2018)">Block Keeper</abbr>,
+                                    <u>Note</u>: Block Keeper saves dates starting v1.3.1 (January 2018)">
+                        Block Keeper</abbr>,
                     <abbr data-toggle="tooltip" data-placement="bottom" data-html="true" class="text-nowrap"
                           title="Stats > Share button > Copy<br/>
                                     <u>Note</u>: ChaoTimer data doesn't include dates">ChaoTimer</abbr>,
@@ -40,16 +41,75 @@
                                     <u>Note</u>: ZYX Timer data doesn't include dates">ZYX Timer</abbr>
                 </div>
                 <br/>
-                <span class="h6">Chart by </span>
-                <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                    <label class="btn btn-light active">
-                        <input type="radio" name="chart-by" id="chart-by-dates" value="chart-by-dates"
-                               autocomplete="off" checked> Dates
-                    </label>
-                    <label class="btn btn-light">
-                        <input type="radio" name="chart-by" id="chart-by-solve-num" value="chart-by-solve-num"
-                               autocomplete="off"> Solve #
-                    </label>
+                <div class="accordion w-50 mx-auto" id="optionsAccordion">
+                    <div class="card rounded">
+                        <div class="card-header" id="headingOne">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link" type="button" data-toggle="collapse"
+                                        data-target="#collapseOne"
+                                        aria-expanded="false" aria-controls="collapseOne">
+                                    Advanced Options
+                                </button>
+                            </h5>
+                        </div>
+
+                        <div id="collapseOne" class="collapse" aria-labelledby="headingOne"
+                             data-parent="#optionsAccordion">
+                            <div class="container card-body">
+                                <div class="row align-items-baseline">
+                                    <div class="col p-2 text-left h6">Chart by</div>
+                                    <div class="col p-2 btn-group btn-group-toggle" data-toggle="buttons">
+                                        <label class="btn btn-light active">
+                                            <input type="radio" name="chart-by" id="chart-by-dates"
+                                                   value="chart-by-dates"
+                                                   autocomplete="off" checked> Dates
+                                        </label>
+                                        <label class="btn btn-light">
+                                            <input type="radio" name="chart-by" id="chart-by-solve-num"
+                                                   value="chart-by-solve-num"
+                                                   autocomplete="off"> Solve #
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="row align-items-baseline">
+                                    <div class="col p-2 text-left h6">Secondary Y Axis</div>
+                                    <div class="col p-2 btn-group btn-group-toggle" data-toggle="buttons"
+                                         id="secondary-y-axis-btns">
+                                        <label class="btn btn-light active">
+                                            <input type="radio" name="secondary-y-axis" id="secondary-y-axis-none"
+                                                   value="none" autocomplete="off" checked> None
+                                        </label>
+                                        <label class="btn btn-light">
+                                            <input type="radio" name="secondary-y-axis" id="secondary-y-axis-subx"
+                                                   value="subx" autocomplete="off"> Sub-X %
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="row align-items-baseline" id="subx-threshold-section"
+                                     style="display: none;">
+                                    <div class="col p-2 text-left h6">Sub-X % Threshold</div>
+                                    <div class="col p-2 btn-group btn-group-toggle" data-toggle="buttons"
+                                         id="subx-threshold-btns">
+                                        <label class="btn btn-light active">
+                                            <input type="radio" name="subx-threshold" id="subx-threshold-auto"
+                                                   value="auto" autocomplete="off" checked> Auto
+                                        </label>
+                                        <label class="btn btn-light">
+                                            <input type="radio" name="subx-threshold" id="subx-threshold-set"
+                                                   value="set" autocomplete="off"> Set
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="row align-items-baseline" id="subx-override-section"
+                                     style="display: none;">
+                                    <div class="col p-2 text-left h6">Sub-X Override</div>
+                                    <div class="col p-2" data-toggle="buttons">
+                                        <input type="text" class="form-control" name="subx-override">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <input type="hidden" id="tz" name="tz" value="UTC"/>
                 <br/><br/>
@@ -84,6 +144,35 @@ window.onload = function () {
         }
         document.getElementById('tz').value = tz;
     }
+
+
+// control the visibility of inner advanced options
+$('#secondary-y-axis-btns').click(function() {
+    setTimeout(function() {
+        if ($('#secondary-y-axis-subx').is(':checked')) {
+            $('#subx-threshold-section').fadeIn();
+            if ($('#subx-threshold-set').is(':checked')) {
+                $('#subx-override-section').fadeIn();
+            }
+        }
+        else {
+            $('#subx-threshold-section').fadeOut();
+            $('#subx-override-section').fadeOut();
+        }
+    }, 200)
+});
+
+
+$('#subx-threshold-btns').click(function() {
+    setTimeout(function() {
+        if ($('#subx-threshold-set').is(':checked')) {
+            $('#subx-override-section').fadeIn();
+        }
+        else {
+            $('#subx-override-section').fadeOut();
+        }
+    }, 200)
+});
 
 
 function shuffle(array) {
@@ -147,6 +236,11 @@ function loading() {
         });
         }, 4 * 1000)
 }
+
+
+
+
+
 
 
 
