@@ -578,6 +578,23 @@ def get_time_ms_from_string(s):
     return solve_time_ms
 
 
+def parse_cstimer_csv_result(s):
+    s = str(s)
+    if s.startswith('DNF'):
+        solve_time = s[4:-1]  # DNF(0.99)
+        penalty = 2
+    elif s[-1] == '+':
+        solve_time = s[:-1]  # cstimer already adds the +2
+        penalty = 1
+    else:
+        solve_time = s
+        penalty = 0
+
+    solve_time_ms = get_time_ms_from_string(solve_time)
+
+    return solve_time_ms, penalty
+
+
 def parse_zyxtimer_result(s):
     if s[-3:] == 'DNF':
         solve_time = s[:-3]
@@ -686,6 +703,22 @@ def create_dataframe(file, timezone):
             'UTC').dt.tz_convert(timezone).dt.tz_localize(None)
 
         df['Puzzle'] = 'Sessions'
+
+        return df, has_dates, timer_type
+    elif headers.startswith('No.;Time;Comment;Scramble;Date;'):
+        # cstimer CSV export of a single session / part of a session
+        timer_type = 'cstimer_csv'
+
+        df = read_csv(file, delimiter=';')
+        has_dates = True
+
+        parsed = df['Time'].apply(parse_cstimer_csv_result)
+        df = concat([df, parsed.apply(Series, index=['Time(millis)', 'Penalty'])], axis=1)
+
+        df['SolveDatetime'] = to_datetime(df['Date']).astype('datetime64[s]')  # already in local timezone
+
+        df['Puzzle'] = 'Sessions'
+        df['Category'] = 'cstimer'
 
         return df, has_dates, timer_type
     elif headers.startswith('{"puzzles":[{"name":'):

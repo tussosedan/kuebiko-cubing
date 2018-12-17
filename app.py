@@ -6,7 +6,7 @@ import time
 from werkzeug.utils import secure_filename
 from io import BytesIO
 
-ALLOWED_EXTENSIONS = {'txt', 'json'}
+ALLOWED_EXTENSIONS = {'txt', 'json', 'csv'}
 UPLOAD_FOLDER = r'C:\uploads'
 
 app = Flask(__name__)
