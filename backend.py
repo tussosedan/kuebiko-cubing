@@ -320,6 +320,7 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
               'ao100': 'rgba(0, 128, 128, 1.0)',
               'ao1000': 'blue'}
 
+    over_60 = False  # for deciding on tickformat
     for series in 'single', 'mo3', 'ao5', 'ao12', 'ao50', 'ao100', 'ao1000':
         if not plot_data[series].isnull().all():
             marker = {'size': 2, 'color': 'red'}
@@ -374,13 +375,21 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
                       'shape': 'hv'}
             ))
 
+            if plot_data[series].max() >= 60:
+                over_60 = True
+
+    if not over_60:
+        yaxis_tickformat = '%S.%L'
+    else:
+        yaxis_tickformat = '%M:%S'
+
     layout = go.Layout(margin={'l': 50,
                                'r': 50,
                                'b': 50,
                                't': 50,
                                'pad': 4
                                },
-                       yaxis={'tickformat': '%M:%S'},
+                       yaxis={'tickformat': yaxis_tickformat},
                        annotations=annotations)
 
     fig = dict(data=data, layout=layout)
