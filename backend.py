@@ -621,9 +621,10 @@ def get_histograms_plot(solves_data, puzzle, category):
     return plot(fig, include_plotlyjs=False, output_type='div', config=config)
 
 
-def generate_dates_histogram(solves_data, group_date_str, tickformat, dtick):
+def generate_dates_histogram(solves_data, group_date_str, tickformat, dtick, day_end_hour):
     solves_grouped = solves_data[['Puzzle', 'Category', 'single']].groupby(
-        [solves_data.SolveDatetime.dropna().dt.strftime(group_date_str), solves_data.Puzzle, solves_data.Category])[
+        [solves_data.SolveDatetime.dropna().apply(lambda x: x - timedelta(hours=day_end_hour)).dt.strftime(
+            group_date_str), solves_data.Puzzle, solves_data.Category])[
         'Puzzle'].count().rename('#')
 
     annotations = []
@@ -676,7 +677,7 @@ def generate_dates_histogram(solves_data, group_date_str, tickformat, dtick):
     return plot(fig, include_plotlyjs=False, output_type='div', config=config)
 
 
-def get_solves_by_dates(solves_data):
+def get_solves_by_dates(solves_data, day_end_hour):
     resdict = OrderedDict()
 
     groups = (('Day', '%Y-%m-%d', None, None),
@@ -684,7 +685,7 @@ def get_solves_by_dates(solves_data):
               ('Year', '%Y', 'd', None))
 
     for group_name, group_date_str, tickformat, dtick in groups:
-        resdict[group_name] = generate_dates_histogram(solves_data, group_date_str, tickformat, dtick)
+        resdict[group_name] = generate_dates_histogram(solves_data, group_date_str, tickformat, dtick, day_end_hour)
 
     return resdict
 
@@ -979,7 +980,7 @@ def drop_all_dnf_categories(solves_data):
     return solves_data[~solves_grouped_index.isin(all_dnf_index)]
 
 
-def process_data(file, chart_by, secondary_y_axis, subx_threshold_mode, subx_override, timezone):
+def process_data(file, chart_by, secondary_y_axis, subx_threshold_mode, subx_override, day_end_hour, timezone):
     # timezone could be a tz name string, or an offset in minutes
     if represents_int(timezone):
         timezone = int(timezone) * 60  # need it in seconds for tz_convert
@@ -1032,7 +1033,7 @@ def process_data(file, chart_by, secondary_y_axis, subx_threshold_mode, subx_ove
                                             subx_thresholds)
     overall_pbs = get_overall_pbs(solves_data)
     if has_dates:
-        solves_by_dates = get_solves_by_dates(solves_data)
+        solves_by_dates = get_solves_by_dates(solves_data, day_end_hour)
     else:
         solves_by_dates = None
 

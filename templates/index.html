@@ -104,7 +104,22 @@
                                      style="display: none;">
                                     <div class="col p-2 text-left h6">Sub-X Override</div>
                                     <div class="col p-2" data-toggle="buttons">
-                                        <input type="text" class="form-control" name="subx-override">
+                                        <input type="text" class="form-control" name="subx-override"
+                                               placeholder="seconds">
+                                    </div>
+                                </div>
+                                <div class="row align-items-baseline">
+                                    <div class="col p-2 text-left h6">Day End Time</div>
+                                    <div class="col p-2">
+                                        <select class="custom-select" name="day-end-hour">
+                                            <option value="0">00:00</option>
+                                            <option value="1">01:00</option>
+                                            <option value="2">02:00</option>
+                                            <option value="3" selected>03:00</option>
+                                            <option value="4">04:00</option>
+                                            <option value="5">05:00</option>
+                                            <option value="6">06:00</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -236,13 +251,6 @@ function loading() {
         });
         }, 4 * 1000)
 }
-
-
-
-
-
-
-
 
 
 </script>
