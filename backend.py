@@ -239,6 +239,15 @@ def get_top_solves(solves_data_part, col_name, top_n, has_dates):
         top_solves.drop(labels='Date & Time', axis='columns', inplace=True)
     top_solves.fillna(value='--', inplace=True)
 
+    # create a column for solve rank
+    top_solves.reset_index(inplace=True, drop=True)
+    top_solves.index += 1
+    top_solves.reset_index(inplace=True)
+    top_solves.rename(inplace=True, columns={"index": "Rank"})
+
+    if col_name == 'single':
+        top_solves.rename(inplace=True, columns={'single': 'Single'})
+
     return top_solves
 
 
@@ -250,7 +259,7 @@ def get_all_top_solves(solves_data, puzzle, category, has_dates):
     # create a column for solve num
     solves_data_part.reset_index(inplace=True, drop=True)
     solves_data_part.index += 1
-    solves_data_part.reset_index(inplace=True, )
+    solves_data_part.reset_index(inplace=True)
     solves_data_part.rename(inplace=True, columns={"index": "Solve #"})
     if has_dates:
         solves_data_part.rename(inplace=True, columns={"SolveDatetime": "Date & Time"})
