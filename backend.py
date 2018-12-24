@@ -843,12 +843,16 @@ def create_dataframe(file, timezone):
         timer_type = 'cstimer_csv'
 
         df = read_csv(file, delimiter=';')
-        has_dates = True
 
         parsed = df['Time'].apply(parse_cstimer_csv_result)
         df = concat([df, parsed.apply(Series, index=['Time(millis)', 'Penalty'])], axis=1)
 
         df['SolveDatetime'] = to_datetime(df['Date']).astype('datetime64[s]')  # already in local timezone
+
+        if not df['SolveDatetime'].isnull().all():
+            has_dates = True
+        else:
+            has_dates = False
 
         df['Puzzle'] = 'Sessions'
         df['Category'] = 'cstimer'
