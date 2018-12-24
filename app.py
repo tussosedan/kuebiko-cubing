@@ -3,6 +3,7 @@ from backend import process_data
 import os
 import traceback
 import time
+import re
 from werkzeug.utils import secure_filename
 from io import BytesIO
 
@@ -18,6 +19,11 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@app.template_filter('regex_replace_dom_id')
+def regex_replace_dom_id(s):
+    return re.sub(r'[^\w-]+', '', s)
 
 
 @app.route('/', methods=['GET', 'POST'])
