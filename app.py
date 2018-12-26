@@ -23,7 +23,7 @@ def allowed_file(filename):
 
 @app.template_filter('regex_replace_dom_id')
 def regex_replace_dom_id(s):
-    return re.sub(r'[^\w-]+', '', s)
+    return re.sub(r'[^\w-]+', '', str(s))
 
 
 @app.route('/', methods=['GET', 'POST'])
