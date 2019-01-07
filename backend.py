@@ -967,6 +967,11 @@ def create_dataframe(file, timezone):
                 else:
                     penalty = 0
 
+                # somehow the time can be null in cstimer's full export
+                if not times[1]:
+                    final_time = 0
+                    penalty = 2
+
                 solves.append([session_values['name'], date, final_time, penalty])
 
         df = DataFrame(data=solves, columns=['Category', 'Date(millis)', 'Time(millis)', 'Penalty'])
