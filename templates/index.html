@@ -41,6 +41,10 @@
                                     <u>Note</u>: ZYX Timer data doesn't include dates">ZYX Timer</abbr>
                 </div>
                 <br/>
+                <div class="alert alert-primary" role="alert">
+                    New! Enter a WCA ID to analyze official results
+                </div>
+                <br/>
                 <div class="accordion col-12 col-sm-10 col-md-8 mx-auto" id="optionsAccordion">
                     <div class="card rounded">
                         <div class="card-header" id="headingOne">
@@ -136,7 +140,7 @@
                 <br/>
                 <textarea class="form-control form-control-sm text-center w-50 mx-auto"
                           id="textinput" name="textinput" rows="1"
-                          placeholder="Or paste the data here"></textarea>
+                          placeholder="WCA ID or paste the data here"></textarea>
             </div>
             <button type="submit" class="btn btn-primary" onclick="loading()">
                 Submit
@@ -256,6 +260,7 @@ function loading() {
         });
         }, 4 * 1000)
 }
+
 
 
 

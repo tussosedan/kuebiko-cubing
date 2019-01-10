@@ -3,7 +3,7 @@ from math import floor, ceil, isnan
 
 from numba import jit
 from numpy import sort, repeat, NaN, array, all, select
-from pandas import read_csv, to_datetime, concat, notnull, DataFrame, Series, cut, set_option
+from pandas import read_csv, to_datetime, concat, notnull, DataFrame, Series, cut, set_option, melt, merge
 
 from plotly.offline import plot
 import plotly.graph_objs as go
@@ -14,6 +14,12 @@ import dateparser
 from html import escape
 
 from collections import OrderedDict
+
+import zipfile
+from io import BytesIO
+
+import os
+WCA_DATA_FOLDER = r'C:\downloads'
 
 
 @jit
@@ -918,6 +924,10 @@ def parse_qqtimer_result(s):
     return solve_time_ms, penalty
 
 
+class WCAIDValueError(ValueError):
+    pass
+
+
 # penalty: 0: none, 1: +2 (time should already include the +2), 2: DNF
 def create_dataframe(file, timezone):
     file.seek(0)
@@ -1124,6 +1134,51 @@ def create_dataframe(file, timezone):
         df['Puzzle'] = 'Sessions'
 
         return df, has_dates, timer_type
+    elif len(headers) == 10:
+        # WCA ID
+        timer_type = 'WCAID'
+
+        with zipfile.ZipFile(os.path.join(WCA_DATA_FOLDER, 'WCA_export.tsv.zip')) as z:  # TODO folder deploy script
+            filtered = BytesIO()
+            with z.open('WCA_export_Results.tsv') as f:
+                for i, line in enumerate(f):
+                    if i == 0:
+                        filtered.write(line)
+                    if '\t' + headers.upper() + '\t' in line.decode():
+                        filtered.write(line)
+            filtered.seek(0)
+            results = read_csv(filtered, sep='\t', dtype={'eventId': object})
+            filtered.close()
+
+            with z.open('WCA_export_Competitions.tsv') as f:
+                comps = read_csv(f, sep='\t')
+
+            with z.open('WCA_export_Events.tsv') as f:
+                events = read_csv(f, sep='\t')
+
+        if len(results) == 0:
+            raise WCAIDValueError
+
+        results.reset_index(inplace=True)
+        results.rename(inplace=True, columns={'index': 'resultRowId'})
+        comps['SolveDatetime'] = to_datetime(comps[['year', 'month', 'day']]).astype('datetime64[s]')
+        events_timed = events[events['format'] == 'time']
+        rescomp = merge(results, comps, how='inner', left_on=['competitionId'], right_on=['id'])
+        all_joined = merge(rescomp[['eventId', 'personName', 'personId',
+                                    'SolveDatetime', 'resultRowId', 'value1', 'value2', 'value3', 'value4', 'value5']],
+                           events_timed, how='inner', left_on=['eventId'], right_on=['id'])
+        melted = melt(all_joined, id_vars=['name', 'personName', 'personId', 'SolveDatetime', 'resultRowId'],
+                      value_vars=['value1', 'value2', 'value3', 'value4', 'value5'], var_name='result_id',
+                      value_name='result').sort_values(
+            ['SolveDatetime', 'name', 'resultRowId', 'result_id'])
+        melted['Penalty'] = 0
+        melted.loc[melted['result'] <= 0, 'Penalty'] = 2
+        melted['Time(millis)'] = melted['result'] * 10
+        melted.rename(inplace=True, columns={'name': 'Category'})
+        melted['Puzzle'] = melted['personName'] + ' (' + melted['personId'] + ')'
+
+        has_dates = True
+        return melted[['Puzzle', 'Category', 'SolveDatetime', 'Time(millis)', 'Penalty']], has_dates, timer_type
     else:
         raise NotImplementedError('Unrecognized file type')
 

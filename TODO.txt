@@ -1,1 +1,6 @@
+TODO official results import:
+    a weekly process to download the latest TSV, and pre-process it into a CSV of wcaid,date,event,result
+    textbox to enter a wcaid
+    df generator that will read the file and filter lines by wcaid, plugging into the normal backend
+
 TODO puz-cat tabs prevent second row on mobile. collapse? images? also collapse long main nav?

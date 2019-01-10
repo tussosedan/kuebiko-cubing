@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, flash, Markup
-from backend import process_data
+from backend import process_data, WCAIDValueError
 import os
 import traceback
 import time
@@ -77,6 +77,9 @@ def index():
                              'Please open an issue on the '
                              '<a href="https://github.com/tussosedan/kuebiko-cubing/issues">github page</a>'
                              ' and upload the file there.'))
+                return redirect(request.url)
+            except WCAIDValueError:
+                flash('WCA ID not found')
                 return redirect(request.url)
             except Exception:
                 if not app.debug:
