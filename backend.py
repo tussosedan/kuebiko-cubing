@@ -49,6 +49,9 @@ def rolling_trimmed_mean(data, window_size, outliers_to_trim):
     means = repeat(NaN, len(data))
     rsd = repeat(NaN, len(data))
 
+    if outliers_to_trim >= window_size - outliers_to_trim:
+        return means, rsd
+
     for i in range(window_size, len(data) + 1):
         if x[window_size - outliers_to_trim - 1]['IsDNF'] == 1:
             means[i - 1] = NaN
@@ -60,6 +63,9 @@ def rolling_trimmed_mean(data, window_size, outliers_to_trim):
             rsd_std = counting_solves.std()
             if rsd_std > 0:
                 rsd[i - 1] = round(rsd_std / counting_solves_mean, 3)
+            # case can happen with large trim resulting in single solve
+            elif rsd_std == 0:
+                rsd[i - 1] = 0
 
         if i != len(data):
             idx_old = binary_search_2d(x, data[i - window_size], window_size)
@@ -76,7 +82,7 @@ def rolling_trimmed_mean(data, window_size, outliers_to_trim):
     return means, rsd
 
 
-def calculate_and_store_running_ao(solves_data, puzzle, category, ao_len):
+def calculate_and_store_running_ao(solves_data, puzzle, category, ao_len, trim_percentage):
     solves_data_part = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)][[
         'TimeCentiSec', 'IsDNF']]
     solves_data_part_array = array(solves_data_part.to_records())
@@ -85,7 +91,7 @@ def calculate_and_store_running_ao(solves_data, puzzle, category, ao_len):
         outliers_to_trim = 0
         prefix = 'mo'
     else:
-        outliers_to_trim = ceil(ao_len * (5 / 100))
+        outliers_to_trim = ceil(ao_len * (trim_percentage / 100))
         prefix = 'ao'
 
     means, rsd = rolling_trimmed_mean(solves_data_part_array, ao_len, outliers_to_trim)
@@ -1192,12 +1198,16 @@ def drop_all_dnf_categories(solves_data):
     return solves_data[~solves_grouped_index.isin(all_dnf_index)]
 
 
-def process_data(file, chart_by, secondary_y_axis, subx_threshold_mode, subx_override, day_end_hour, timezone):
+def process_data(file, chart_by, secondary_y_axis, subx_threshold_mode, subx_override, day_end_hour, timezone, trim_percentage):
     set_option('display.max_colwidth', -1)
 
     # timezone could be a tz name string, or an offset in minutes
     if represents_int(timezone):
         timezone = int(timezone) * 60  # need it in seconds for tz_convert
+
+    # limit to 40 to keep at least one solve for ao5
+    if trim_percentage < 0 or trim_percentage > 40:
+        trim_percentage = 5
 
     solves_data, has_dates, timer_type = create_dataframe(file, timezone)
 
@@ -1216,7 +1226,7 @@ def process_data(file, chart_by, secondary_y_axis, subx_threshold_mode, subx_ove
     subx_thresholds = dict()
     for idx, puzzle, category in solves_data[['Puzzle', 'Category']].drop_duplicates().itertuples():
         for ao_len in (3, 5, 12, 50, 100, 1000):
-            calculate_and_store_running_ao(solves_data, puzzle, category, ao_len)
+            calculate_and_store_running_ao(solves_data, puzzle, category, ao_len, trim_percentage)
         if secondary_y_axis == 'subx':
             if subx_threshold_mode == 'auto':
                 subx_threshold = get_subx_threshold(solves_data, puzzle, category)

@@ -130,6 +130,51 @@
                                         </select>
                                     </div>
                                 </div>
+                                <div class="row align-items-baseline">
+                                    <div class="col p-2 text-left h6">Custom trimmed mean</div>
+                                    <div class="col p-2 btn-group btn-group-toggle" data-toggle="buttons"
+                                        id="custom-trimmed-mean-btns">
+                                        <label class="btn btn-light">
+                                            <input type="radio" name="custom-trimmed-mean" id="custom-trimmed-mean-yes"
+                                                value="yes" autocomplete="off"> Yes
+                                        </label>
+                                        <label class="btn btn-light active">
+                                            <input type="radio" name="custom-trimmed-mean" id="custom-trimmed-mean-no"
+                                                value="no" autocomplete="off" checked> No
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="row align-items-baseline" id="custom-trimmed-mean-section"
+                                    style="display: none;">
+                                    <div class="col p-2 text-left h6">Top/bottom trim</div>
+                                    <div class="col p-2">
+                                        <select class="custom-select" name="trim-percentage" id="trim-percentage-select">
+                                            <option value="0">0%</option>
+                                            <option value="5" selected>5% (default)</option>
+                                            <option value="10">10%</option>
+                                            <option value="15">15%</option>
+                                            <option value="20">20%</option>
+                                            <option value="25">25%</option>
+                                            <option value="30">30%</option>
+                                            <option value="35">35%</option>
+                                            <option value="40">40%</option>
+                                        </select>
+                                        <small>
+                                            <table class="table table-sm table-borderless table-striped">
+                                                <thead>
+                                                    <tr><th scope="col">Average</th><th scope="col">Counting solves</th></tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr><td>ao5</td><td id="ao5">3</td></tr>
+                                                    <tr><td>ao12</td><td id="ao12">10</td></tr>
+                                                    <tr><td>ao50</td><td id="ao50">44</td></tr>
+                                                    <tr><td>ao100</td><td id="ao100">90</td></tr>
+                                                    <tr><td>ao1000</td><td id="ao1000">900</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </small>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -197,6 +242,33 @@ $('#subx-threshold-btns').click(function() {
     }, 200)
 });
 
+$('#custom-trimmed-mean-btns').click(function() {
+    setTimeout(function() {
+        if ($('#custom-trimmed-mean-yes').is(':checked')) {
+            $('#custom-trimmed-mean-section').fadeIn();
+        }
+        else {
+            $('#custom-trimmed-mean-section').fadeOut();
+        }
+    }, 200)
+});
+
+$('#trim-percentage-select').change(function() {
+    $('#trim-percentage-select option:selected').each(function() {
+        var selectedValue = parseInt($(this).val())
+        if (selectedValue >= 0 && selectedValue <= 40) {
+            $("#ao5").text(getCountingSolves(5, selectedValue))
+            $("#ao12").text(getCountingSolves(12, selectedValue))
+            $("#ao50").text(getCountingSolves(50, selectedValue))
+            $("#ao100").text(getCountingSolves(100, selectedValue))
+            $("#ao1000").text(getCountingSolves(1000, selectedValue))
+        }
+    });
+});
+
+function getCountingSolves(solvesNumber, trimPercentage) {
+    return solvesNumber - (Math.ceil(solvesNumber*trimPercentage/100)*2)
+}
 
 function shuffle(array) {
     var i = array.length,
