@@ -1138,7 +1138,7 @@ def create_dataframe(file, timezone):
         # WCA ID
         timer_type = 'WCAID'
 
-        with zipfile.ZipFile(os.path.join(WCA_DATA_FOLDER, 'WCA_export.tsv.zip')) as z:  # TODO folder deploy script
+        with zipfile.ZipFile(os.path.join(WCA_DATA_FOLDER, 'WCA_export.tsv.zip')) as z:
             filtered = BytesIO()
             with z.open('WCA_export_Results.tsv') as f:
                 for i, line in enumerate(f):
@@ -1171,8 +1171,9 @@ def create_dataframe(file, timezone):
                       value_vars=['value1', 'value2', 'value3', 'value4', 'value5'], var_name='result_id',
                       value_name='result').sort_values(
             ['SolveDatetime', 'name', 'resultRowId', 'result_id'])
+        melted = melted[(melted['result'] != 0) & (melted['result'] != -2)]  # 0=no result; -2=DNS
         melted['Penalty'] = 0
-        melted.loc[melted['result'] <= 0, 'Penalty'] = 2
+        melted.loc[melted['result'] <= 0, 'Penalty'] = 2  # -1=DNF, others?
         melted['Time(millis)'] = melted['result'] * 10
         melted.rename(inplace=True, columns={'name': 'Category'})
         melted['Puzzle'] = melted['personName'] + ' (' + melted['personId'] + ')'
