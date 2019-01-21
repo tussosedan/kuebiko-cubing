@@ -60,7 +60,7 @@ def index():
             subx_threshold_mode = request.form.get('subx-threshold', 'auto')
             subx_override = request.form.get('subx-override', 'none')
             day_end_hour = int(request.form.get('day-end-hour', 'none'))
-            trim_percentage = int(request.form.get('trim-percentage', 'none'))
+            trim_percentage = request.form.get('trim-percentage', 5, type=int)
             timezone = request.form.get('tz', 'UTC')
 
             if secondary_y_axis == 'none':
