@@ -155,6 +155,9 @@ def sec2dtstr(seconds):
     if s[-4:] == '0000':
         s = s[:-4]
 
+    if '.' not in s:
+        s = s + '.00'
+
     return s
 
 
@@ -258,7 +261,7 @@ def get_first_subx_progression(pb_progression, ao_len, has_dates, timezone, solv
 
     if has_dates:
         column_list = ['Solve #', 'Date & Time', series]
-        final_column_list = ['Sub-X ' + series, 'Date & Time', 'Sub-X For Time', 'Solve #', 'Sub-X For # Solves']
+        final_column_list = ['Sub-X ' + series, 'Date & Time', 'Time Until Next Sub-X', 'Solve #', '# Solves Until Next Sub-X']
         if ao_len > 1:
             column_list.append(series_rsd)
             final_column_list.append(series_rsd)
@@ -266,17 +269,30 @@ def get_first_subx_progression(pb_progression, ao_len, has_dates, timezone, solv
         first_subx_ids = pb_progression.groupby(pb_progression[series].astype(int))[series].idxmax()
         first_subx_progression = pb_progression.loc[first_subx_ids][column_list]
 
-        first_subx_progression['Sub-X For Time'] = first_subx_progression['Date & Time'].diff(periods=1) * -1
+        first_subx_progression['Time Until Next Sub-X'] = first_subx_progression['Date & Time'].diff(periods=1) * -1
 
         last_date = first_subx_progression.head(1)['Date & Time']
         last_date_value = Series(datetime.utcnow().replace(microsecond=0)).dt.tz_localize(
             'UTC').dt.tz_convert(timezone).dt.tz_localize(None).iloc[0]
         last_date_diff = last_date_value - last_date.iloc[0]
         if notnull(last_date_diff):
-            first_subx_progression.loc[last_date.index, 'Sub-X For Time'] = str(last_date_diff) + ' and counting'
+            first_subx_progression.loc[last_date.index, 'Time Until Next Sub-X'] = str(last_date_diff) + ' and counting'
+
+        if first_subx_progression['Date & Time'].isnull().all():
+            first_subx_progression.drop(labels='Date & Time', axis='columns', inplace=True)
+            final_column_list.remove('Date & Time')
+        else:
+            first_subx_progression['Date & Time'] = first_subx_progression['Date & Time'].fillna(value='--')
+
+        if first_subx_progression['Time Until Next Sub-X'].isnull().all():
+            first_subx_progression.drop(labels='Time Until Next Sub-X', axis='columns', inplace=True)
+            final_column_list.remove('Time Until Next Sub-X')
+        else:
+            first_subx_progression['Time Until Next Sub-X'] = first_subx_progression['Time Until Next Sub-X'].fillna(
+                value='--')
     else:
         column_list = ['Solve #', series]
-        final_column_list = ['Sub-X ' + series, 'Solve #', 'Sub-X For # Solves']
+        final_column_list = ['Sub-X ' + series, 'Solve #', '# Solves Until Next Sub-X']
         if ao_len > 1:
             column_list.append(series_rsd)
             final_column_list.append(series_rsd)
@@ -284,11 +300,11 @@ def get_first_subx_progression(pb_progression, ao_len, has_dates, timezone, solv
         first_subx_ids = pb_progression.groupby(pb_progression[series].astype(int))[series].idxmax()
         first_subx_progression = pb_progression.loc[first_subx_ids][column_list]
 
-    first_subx_progression['Sub-X For # Solves'] = (
+    first_subx_progression['# Solves Until Next Sub-X'] = (
             first_subx_progression['Solve #'].diff(periods=1) * -1).dropna().apply(lambda x: str(int(x)))
 
     last_index = first_subx_progression.head(1)['Solve #']
-    first_subx_progression.loc[last_index.index, 'Sub-X For # Solves'] = str(
+    first_subx_progression.loc[last_index.index, '# Solves Until Next Sub-X'] = str(
         solves_data_part['Solve #'].iloc[-1] - last_index.iloc[0]) + ' and counting'
 
     first_subx_progression['Sub-X ' + series] = first_subx_progression[series].apply(sec2dtstr)
@@ -300,7 +316,8 @@ def get_first_subx_progression(pb_progression, ao_len, has_dates, timezone, solv
 
 
 def get_all_first_subx_progressions(pb_progressions, has_dates, timezone, solves_data, puzzle, category):
-    solves_data_part = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)]
+    solves_data_part = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)].copy(
+        deep=True)
     # create a column for solve num
     solves_data_part.reset_index(inplace=True, drop=True)
     solves_data_part.index += 1
@@ -1278,7 +1295,8 @@ def drop_all_dnf_categories(solves_data):
     return solves_data[~solves_grouped_index.isin(all_dnf_index)]
 
 
-def process_data(file, chart_by, secondary_y_axis, subx_threshold_mode, subx_override, day_end_hour, timezone, trim_percentage):
+def process_data(file, chart_by, secondary_y_axis, subx_threshold_mode, subx_override, day_end_hour, timezone,
+                 trim_percentage):
     set_option('display.max_colwidth', -1)
 
     # timezone could be a tz name string, or an offset in minutes
