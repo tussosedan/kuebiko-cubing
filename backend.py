@@ -19,6 +19,7 @@ import zipfile
 from io import BytesIO
 
 import os
+
 WCA_DATA_FOLDER = r'C:\downloads'
 
 
@@ -244,6 +245,81 @@ def get_all_pb_progressions(solves_data, puzzle, category, has_dates, timezone):
     return res
 
 
+def get_first_subx_progression(pb_progression, ao_len, has_dates, timezone, solves_data_part):
+    if ao_len == 1:
+        series = 'single'
+        series_rsd = None
+    elif ao_len == 3:
+        series = 'mo3'
+        series_rsd = 'rsd3'
+    else:
+        series = 'ao' + str(ao_len)
+        series_rsd = 'rsd' + str(ao_len)
+
+    if has_dates:
+        column_list = ['Solve #', 'Date & Time', series]
+        final_column_list = ['Sub-X ' + series, 'Date & Time', 'Sub-X For Time', 'Solve #', 'Sub-X For # Solves']
+        if ao_len > 1:
+            column_list.append(series_rsd)
+            final_column_list.append(series_rsd)
+
+        first_subx_ids = pb_progression.groupby(pb_progression[series].astype(int))[series].idxmax()
+        first_subx_progression = pb_progression.loc[first_subx_ids][column_list]
+
+        first_subx_progression['Sub-X For Time'] = first_subx_progression['Date & Time'].diff(periods=1) * -1
+
+        last_date = first_subx_progression.head(1)['Date & Time']
+        last_date_value = Series(datetime.utcnow().replace(microsecond=0)).dt.tz_localize(
+            'UTC').dt.tz_convert(timezone).dt.tz_localize(None).iloc[0]
+        last_date_diff = last_date_value - last_date.iloc[0]
+        if notnull(last_date_diff):
+            first_subx_progression.loc[last_date.index, 'Sub-X For Time'] = str(last_date_diff) + ' and counting'
+    else:
+        column_list = ['Solve #', series]
+        final_column_list = ['Sub-X ' + series, 'Solve #', 'Sub-X For # Solves']
+        if ao_len > 1:
+            column_list.append(series_rsd)
+            final_column_list.append(series_rsd)
+
+        first_subx_ids = pb_progression.groupby(pb_progression[series].astype(int))[series].idxmax()
+        first_subx_progression = pb_progression.loc[first_subx_ids][column_list]
+
+    first_subx_progression['Sub-X For # Solves'] = (
+            first_subx_progression['Solve #'].diff(periods=1) * -1).dropna().apply(lambda x: str(int(x)))
+
+    last_index = first_subx_progression.head(1)['Solve #']
+    first_subx_progression.loc[last_index.index, 'Sub-X For # Solves'] = str(
+        solves_data_part['Solve #'].iloc[-1] - last_index.iloc[0]) + ' and counting'
+
+    first_subx_progression['Sub-X ' + series] = first_subx_progression[series].apply(sec2dtstr)
+
+    if ao_len > 1:
+        first_subx_progression[series_rsd] = first_subx_progression[series_rsd].apply(lambda x: '{:.1%}'.format(x))
+
+    return first_subx_progression[final_column_list]
+
+
+def get_all_first_subx_progressions(pb_progressions, has_dates, timezone, solves_data, puzzle, category):
+    solves_data_part = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)]
+    # create a column for solve num
+    solves_data_part.reset_index(inplace=True, drop=True)
+    solves_data_part.index += 1
+    solves_data_part.reset_index(inplace=True)
+    solves_data_part.rename(inplace=True, columns={"index": "Solve #"})
+
+    res = OrderedDict()
+    for ao_len, pb_progression in pb_progressions.items():
+        if ao_len == 1:
+            series = 'single'
+        elif ao_len == 3:
+            series = 'mo3'
+        else:
+            series = 'ao' + str(ao_len)
+
+        res[series] = get_first_subx_progression(pb_progression, ao_len, has_dates, timezone, solves_data_part)
+    return res
+
+
 def generate_pbs_display(pb_progressions, has_dates):
     res = OrderedDict()
 
@@ -380,11 +456,14 @@ def get_all_solves_details(solves_data, has_dates, timezone, chart_by, secondary
 
             top_solves = get_all_top_solves(solves_data, puz, cat, has_dates)
 
+            first_subx_progressions = get_all_first_subx_progressions(pb_progressions, has_dates, timezone, solves_data,
+                                                                      puz, cat)
+
             solves_plot = get_solves_plot(solves_data, puz, cat, has_dates, chart_by, pb_progressions, secondary_y_axis,
                                           subx_thresholds)
             histograms_plot = get_histograms_plot(solves_data, puz, cat)
 
-            catdict[cat] = pbs_display, solves_plot, histograms_plot, top_solves
+            catdict[cat] = pbs_display, solves_plot, histograms_plot, top_solves, first_subx_progressions
 
         renamed_puz = rename_puzzle(puz)
         resdict[renamed_puz] = catdict

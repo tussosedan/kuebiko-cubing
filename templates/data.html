@@ -206,6 +206,13 @@
                         class="nav-link text-white bg-primary">Top 50</a>
                 </li>
 
+                <li class="nav-item"><a
+                        id="puz-{{ puz_replaced }}-cat-{{ cat_replaced }}-first-subx-tab"
+                        href="#puz-{{ puz_replaced }}-cat-{{ cat_replaced }}-first-subx"
+                        aria-controls="puz-{{ puz_replaced }}-cat-{{ cat_replaced }}-first-subx"
+                        role="tab" data-toggle="tab"
+                        class="nav-link text-white bg-primary">First Sub-X</a>
+                </li>
             </ul>
         </nav>
 
@@ -273,7 +280,7 @@
                 <nav class="navbar navbar-expand-lg navbar-light bg-light justify-content-center"
                      id="topn-navbar">
                     <ul class="nav nav-pills" role="tablist">
-                        {% for series, topn in details[0].items() %}
+                        {% for series, topn in details[3].items() %}
                         <li class="nav-item"><a
                                 id="puz-{{ puz_replaced }}-cat-{{ cat_replaced }}-topn-{{ series }}-tab"
                                 href="#puz-{{ puz_replaced }}-cat-{{ cat_replaced }}-topn-{{ series }}"
@@ -296,6 +303,44 @@
                         <div class="container-fluid">
                             <div class="table-responsive fixed-table-body">
                                 {{ topn.to_html(classes="table table-bordered table-striped
+                                text-center", justify="center", index=False, na_rep='--') | safe }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div role="tabpanel" class="tab-pane fade"
+                 id="puz-{{ puz_replaced }}-cat-{{ cat_replaced }}-first-subx"
+                 aria-labelledby="puz-{{ puz_replaced }}-cat-{{ cat_replaced }}-first-subx-tab">
+
+                <nav class="navbar navbar-expand-lg navbar-light bg-light justify-content-center"
+                     id="first-subx-navbar">
+                    <ul class="nav nav-pills" role="tablist">
+                        {% for series, first_subx in details[4].items() %}
+                        <li class="nav-item"><a
+                                id="puz-{{ puz_replaced }}-cat-{{ cat_replaced }}-first-subx-{{ series }}-tab"
+                                href="#puz-{{ puz_replaced }}-cat-{{ cat_replaced }}-first-subx-{{ series }}"
+                                aria-controls="puz-{{ puz_replaced }}-cat-{{ cat_replaced }}-first-subx-{{ series }}"
+                                role="tab" data-toggle="tab"
+                                class="nav-link
+                                                        {% if loop.index == 1 %} active {% endif %}">
+                            {{ series }}
+                        </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </nav>
+
+                <div class="tab-content">
+                    {% for series, first_subx in details[4].items() %}
+                    <div role="tabpanel" class="tab-pane fade {% if loop.index == 1 %} show active {% endif %}"
+                         id="puz-{{ puz_replaced }}-cat-{{ cat_replaced }}-first-subx-{{ series }}"
+                         aria-labelledby="puz-{{ puz_replaced }}-cat-{{ cat_replaced }}-first-subx-{{ series }}-tab">
+                        <div class="container-fluid">
+                            <div class="table-responsive fixed-table-body">
+                                {{ first_subx.to_html(classes="table table-bordered table-striped
                                 text-center", justify="center", index=False, na_rep='--') | safe }}
                             </div>
                         </div>
