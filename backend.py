@@ -1056,10 +1056,25 @@ def create_dataframe(file, timezone):
         timer_type = 'cstimer'
         data = json.load(file)
 
+        if type(data['properties']) is str:
+            # before cstimer's cleanup of the export JSON
+            properties = json.loads(data['properties'])
+        else:
+            # after cstimer's cleanup of the export JSON
+            properties = data['properties']
+
         solves = []
         has_dates = False  # correct later to True if dates found
-        for session_id, session_values in json.loads(json.loads(data['properties'])['sessionData']).items():
-            for solve_data in json.loads(data.get('session' + session_id, '[]')):
+        for session_id, session_values in json.loads(properties['sessionData']).items():
+            session_data_raw = data.get('session' + session_id, '[]')
+            if type(session_data_raw) is str:
+                # before cstimer's cleanup of the export JSON
+                session_data = json.loads(session_data_raw)
+            else:
+                # after cstimer's cleanup of the export JSON
+                session_data = session_data_raw
+
+            for solve_data in session_data:
                 if len(solve_data) == 3:
                     # old version, without dates
                     times, scramble, notes = solve_data
