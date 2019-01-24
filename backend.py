@@ -137,7 +137,7 @@ def calculate_and_store_running_subx(solves_data, puzzle, category, ao_len, subx
             lambda ar: ((ar < subx_threshold).sum()) / ao_len, raw=True)['single']
 
 
-def sec2dtstr(seconds):
+def sec2dtstr(seconds, show_zeroes=True):
     if isnan(seconds):
         return seconds
 
@@ -155,7 +155,7 @@ def sec2dtstr(seconds):
     if s[-4:] == '0000':
         s = s[:-4]
 
-    if '.' not in s:
+    if ('.' not in s) and show_zeroes:
         s = s + '.00'
 
     return s
@@ -261,7 +261,8 @@ def get_first_subx_progression(pb_progression, ao_len, has_dates, timezone, solv
 
     if has_dates:
         column_list = ['Solve #', 'Date & Time', series]
-        final_column_list = ['Sub-X ' + series, 'Date & Time', 'Time Until Next Sub-X', 'Solve #', '# Solves Until Next Sub-X']
+        final_column_list = ['Sub-X ' + series, 'Date & Time', 'Time Until Next Sub-X', 'Solve #',
+                             '# Solves Until Next Sub-X']
         if ao_len > 1:
             column_list.append(series_rsd)
             final_column_list.append(series_rsd)
@@ -652,7 +653,8 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
             if secondary_y_axis and (ao_len > 1):
                 if secondary_y_axis == 'subx':
                     y2_data = plot_data[series_subx]
-                    y2_name = "% sub-" + sec2dtstr(subx_thresholds[(puzzle, category)]) + " " + series
+                    y2_name = "% sub-" + sec2dtstr(subx_thresholds[(puzzle, category)],
+                                                   show_zeroes=False) + " " + series
                     y2_colors = series_subx
                 elif secondary_y_axis == 'rsd':
                     y2_data = plot_data[series_rsd]
@@ -724,7 +726,7 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
     if secondary_y_axis:
         layout_xaxis['domain'] = [0, 0.97]
         if secondary_y_axis == 'subx':
-            yaxis2_title = "% sub-" + sec2dtstr(subx_thresholds[(puzzle, category)])
+            yaxis2_title = "% sub-" + sec2dtstr(subx_thresholds[(puzzle, category)], show_zeroes=False)
             yaxis2_tickformat = '.1%'
             yaxis2_range = [0, 1]
             yaxis2_fixedrange = True
@@ -775,7 +777,7 @@ def generate_histogram(plot_data_raw, name):
     min_time = int(plot_data_raw.min())
     intervals = list(range(min_time, max_time + 1))
     intervals_dt = [sec2dt(sec) for sec in intervals]
-    labels = [sec2dtstr(sec) + ".00-" + sec2dtstr(sec + 0.99) for sec in intervals[:-1]]
+    labels = [sec2dtstr(sec) + "-" + sec2dtstr(sec + 0.99) for sec in intervals[:-1]]
 
     bins = cut(plot_data_raw, intervals, right=False, labels=labels)
     plot_data = plot_data_raw.groupby(bins).count()
