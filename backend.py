@@ -460,6 +460,13 @@ def rename_puzzle(puz):
         return puz
 
 
+def is_display_puzzle_name(timer_type):
+    if timer_type in ('TwistyTimer', 'BlockKeeper'):
+        return True
+    else:
+        return False
+
+
 def get_all_solves_details(solves_data, has_dates, timezone, chart_by, secondary_y_axis, subx_thresholds):
     # generate a nested dict puzzle -> category -> pb progression df
     puzcats = {k: sorted(g['Category'].tolist(), key=lambda s: str(s).casefold())
@@ -510,7 +517,7 @@ def create_pbs_display_value(time, date=None, rsd=None):
     return res
 
 
-def get_overall_pbs(solves_data):
+def get_overall_pbs(solves_data, timer_type):
     min_idx = solves_data[solves_data['Penalty'] != 2][
         ['Puzzle', 'Category', 'single', 'mo3', 'ao5', 'ao12', 'ao50', 'ao100', 'ao1000']]. \
         groupby(['Puzzle', 'Category']).idxmin()
@@ -549,7 +556,7 @@ def get_overall_pbs(solves_data):
     # escape puzzle and category names for html, as to_html escaping is now disabled for this table to use span
     pbs_with_count.index = pbs_with_count.index.map(lambda tp: tuple(escape(str(x)) for x in tp))
 
-    if all(pbs_with_count.index.levels[0] == 'Sessions'):
+    if not is_display_puzzle_name(timer_type):
         # no need to display if no puzzle data
         pbs_with_count.index = pbs_with_count.index.droplevel(level=0)
         pbs_with_count.rename_axis(None, inplace=True)
@@ -879,7 +886,7 @@ def get_histograms_plot(solves_data, puzzle, category):
     return plot(fig, include_plotlyjs=False, output_type='div', config=config)
 
 
-def generate_dates_histogram(solves_data, group_date_str, tickformat, dtick, day_end_hour):
+def generate_dates_histogram(solves_data, group_date_str, tickformat, dtick, timer_type, day_end_hour):
     solves_grouped = solves_data[['Puzzle', 'Category', 'single']].groupby(
         [solves_data.SolveDatetime.dropna().apply(lambda x: x - timedelta(hours=day_end_hour)).dt.strftime(
             group_date_str), solves_data.Puzzle, solves_data.Category])[
@@ -900,7 +907,7 @@ def generate_dates_histogram(solves_data, group_date_str, tickformat, dtick, day
     plot_data = solves_grouped.unstack([1, 2])
 
     # noinspection PyUnresolvedReferences
-    if plot_data.columns.levels[0][0] == 'Sessions':
+    if not is_display_puzzle_name(timer_type):
         # noinspection PyUnresolvedReferences
         plot_data.columns = [str(col[1]).strip() for col in plot_data.columns.values]
     else:
@@ -935,7 +942,7 @@ def generate_dates_histogram(solves_data, group_date_str, tickformat, dtick, day
     return plot(fig, include_plotlyjs=False, output_type='div', config=config)
 
 
-def get_solves_by_dates(solves_data, day_end_hour):
+def get_solves_by_dates(solves_data, timer_type, day_end_hour):
     resdict = OrderedDict()
 
     groups = (('Day', '%Y-%m-%d', None, None),
@@ -943,7 +950,8 @@ def get_solves_by_dates(solves_data, day_end_hour):
               ('Year', '%Y', 'd', None))
 
     for group_name, group_date_str, tickformat, dtick in groups:
-        resdict[group_name] = generate_dates_histogram(solves_data, group_date_str, tickformat, dtick, day_end_hour)
+        resdict[group_name] = generate_dates_histogram(solves_data, group_date_str, tickformat, dtick, timer_type,
+                                                       day_end_hour)
 
     return resdict
 
@@ -1253,7 +1261,7 @@ def create_dataframe(file, timezone):
         df['Puzzle'] = 'Sessions'
 
         return df, has_dates, timer_type
-    elif len(headers) == 10:
+    elif len(headers.strip()) == 10:
         # WCA ID
         timer_type = 'WCAID'
 
@@ -1263,7 +1271,7 @@ def create_dataframe(file, timezone):
                 for i, line in enumerate(f):
                     if i == 0:
                         filtered.write(line)
-                    if '\t' + headers.upper() + '\t' in line.decode():
+                    if '\t' + headers.strip().upper() + '\t' in line.decode():
                         filtered.write(line)
             filtered.seek(0)
             results = read_csv(filtered, sep='\t', dtype={'eventId': object})
@@ -1283,10 +1291,10 @@ def create_dataframe(file, timezone):
         comps['SolveDatetime'] = to_datetime(comps[['year', 'month', 'day']]).astype('datetime64[s]')
         events_timed = events[events['format'] == 'time']
         rescomp = merge(results, comps, how='inner', left_on=['competitionId'], right_on=['id'])
-        all_joined = merge(rescomp[['eventId', 'personName', 'personId',
+        all_joined = merge(rescomp[['eventId',
                                     'SolveDatetime', 'resultRowId', 'value1', 'value2', 'value3', 'value4', 'value5']],
                            events_timed, how='inner', left_on=['eventId'], right_on=['id'])
-        melted = melt(all_joined, id_vars=['name', 'personName', 'personId', 'SolveDatetime', 'resultRowId'],
+        melted = melt(all_joined, id_vars=['name', 'SolveDatetime', 'resultRowId'],
                       value_vars=['value1', 'value2', 'value3', 'value4', 'value5'], var_name='result_id',
                       value_name='result').sort_values(
             ['SolveDatetime', 'name', 'resultRowId', 'result_id'])
@@ -1295,7 +1303,7 @@ def create_dataframe(file, timezone):
         melted.loc[melted['result'] <= 0, 'Penalty'] = 2  # -1=DNF, others?
         melted['Time(millis)'] = melted['result'] * 10
         melted.rename(inplace=True, columns={'name': 'Category'})
-        melted['Puzzle'] = melted['personName'] + ' (' + melted['personId'] + ')'
+        melted['Puzzle'] = results.iloc[-1]['personName'] + ' (' + results.iloc[-1]['personId'] + ')'
 
         has_dates = True
         return melted[['Puzzle', 'Category', 'SolveDatetime', 'Time(millis)', 'Penalty']], has_dates, timer_type
@@ -1373,9 +1381,9 @@ def process_data(file, chart_by, secondary_y_axis, subx_threshold_mode, subx_ove
 
     solves_details = get_all_solves_details(solves_data, has_dates, timezone, chart_by, secondary_y_axis,
                                             subx_thresholds)
-    overall_pbs = get_overall_pbs(solves_data)
+    overall_pbs = get_overall_pbs(solves_data, timer_type)
     if has_dates:
-        solves_by_dates = get_solves_by_dates(solves_data, day_end_hour)
+        solves_by_dates = get_solves_by_dates(solves_data, timer_type, day_end_hour)
     else:
         solves_by_dates = None
 
