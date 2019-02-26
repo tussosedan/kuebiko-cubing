@@ -61,16 +61,22 @@ def index():
             subx_override = request.form.get('subx-override', 'none')
             day_end_hour = request.form.get('day-end-hour', 3, type=int)
             trim_percentage = request.form.get('trim-percentage', 5, type=int)
+            merge_sessions = request.form.get('merge-sessions', 'merge-sessions-no')
             timezone = request.form.get('tz', 'UTC')
 
             if secondary_y_axis == 'none':
                 secondary_y_axis = None
 
+            if merge_sessions == 'merge-sessions-yes':
+                merge_sessions = True
+            else:
+                merge_sessions = False
+
             # noinspection PyBroadException
             try:
                 solves_details, overall_pbs, solves_by_dates, timer_type, datalen = \
                     process_data(file_to_send, chart_by, secondary_y_axis, subx_threshold_mode, subx_override,
-                                 day_end_hour, timezone, trim_percentage)
+                                 day_end_hour, timezone, trim_percentage, merge_sessions)
                 return render_template("data.html", solves_details=solves_details, overall_pbs=overall_pbs,
                                        solves_by_dates=solves_by_dates, timer_type=timer_type, datalen=datalen)
             except NotImplementedError:

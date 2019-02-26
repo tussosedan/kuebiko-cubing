@@ -175,6 +175,28 @@
                                         </small>
                                     </div>
                                 </div>
+                                <div class="row align-items-baseline">
+                                    <div class="col p-2 text-left h6">
+                                        <abbr data-toggle="tooltip" data-placement="bottom" data-html="true" class="text-nowrap"
+                                        title="<div class='text-left'>Merge sessions by puzzle for timers that support it (e.g. Twisty Timer, Block Keeper), allowing for more global statistics. Example:
+                                        <small><ul><li>3x3<ul><li>Session1<ul><li>solve1</li><li>solve2</li></ul></li><li>Session2<ul><li>solve3</li><li>solve4</li></ul></li></ul></li></ul></small>
+                                        Becomes: <small><ul><li>3x3<ul><li>Merged sessions<ul><li>solve1</li><li>solve2</li><li>solve3</li><li>solve4</li></ul></li></ul></li></ul></small></div>">
+                                            Merge sessions
+                                        </abbr>
+                                    </div>
+                                    <div class="col p-2 btn-group btn-group-toggle" data-toggle="buttons">
+                                        <label class="btn btn-light">
+                                            <input type="radio" name="merge-sessions" id="merge-sessions-yes"
+                                                   value="merge-sessions-yes"
+                                                   autocomplete="off"> Yes
+                                        </label>
+                                        <label class="btn btn-light active">
+                                            <input type="radio" name="merge-sessions" id="merge-sessions-no"
+                                                   value="merge-sessions-no"
+                                                   autocomplete="off" checked> No
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
