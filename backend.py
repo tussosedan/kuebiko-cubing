@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from math import floor, ceil, isnan
 
 from numba import jit
-from numpy import sort, repeat, NaN, array, all, select
+from numpy import sort, repeat, NaN, array, select
 from pandas import read_csv, to_datetime, concat, notnull, DataFrame, Series, cut, set_option, melt, merge
 
 from plotly.offline import plot
@@ -1314,8 +1314,9 @@ def create_dataframe(file, timezone):
         melted['Puzzle'] = results.iloc[-1]['personName'] + ' (' + results.iloc[-1]['personId'] + ')'
 
         has_dates = True
-        mergeable_categories = False # categories are already merged
-        return melted[['Puzzle', 'Category', 'SolveDatetime', 'Time(millis)', 'Penalty']], has_dates, timer_type, mergeable_categories
+        mergeable_categories = False  # categories are already merged
+        return melted[['Puzzle', 'Category', 'SolveDatetime', 'Time(millis)',
+                       'Penalty']], has_dates, timer_type, mergeable_categories
     else:
         raise NotImplementedError('Unrecognized file type')
 
