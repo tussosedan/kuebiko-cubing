@@ -1255,13 +1255,22 @@ def create_dataframe(file, timezone):
 
         all_solves = []
         session = None  # avoiding "before assignment" warning
+        found_session_name = False
+        found_times_row = False
         for i, line in enumerate(file):
-            if i == 2:
-                session = line.decode().strip()
-            elif i == 10:
-                solves = line.decode().strip().split(sep=', ')
+            line_decoded = line.decode().strip()
+            if i == 0:
+                pass
+            elif not found_session_name and len(line_decoded) > 0:
+                session = line_decoded
+                found_session_name = True
+            elif not found_times_row and line_decoded.startswith('Individual Times:'):
+                found_times_row = True
+            elif found_times_row:
+                solves = line_decoded.split(sep=', ')
                 session_solves = [[session] + list(parse_chaotimer_result(solve)) for solve in solves]
                 all_solves.extend(session_solves)
+                break
         df = DataFrame(data=all_solves, columns=['Category', 'Time(millis)', 'Penalty'])
 
         has_dates = False
