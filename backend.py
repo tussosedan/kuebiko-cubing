@@ -137,9 +137,12 @@ def calculate_and_store_running_subx(solves_data, puzzle, category, ao_len, subx
             lambda ar: ((ar < subx_threshold).sum()) / ao_len, raw=True)['single']
 
 
-def sec2dtstr(seconds, show_zeroes=True):
+def sec2dtstr(seconds, show_zeroes=True, dnf_as_string=False):
     if isnan(seconds):
-        return seconds
+        if dnf_as_string:
+            return 'DNF'
+        else:
+            return seconds
 
     s = str(timedelta(seconds=seconds))
 
@@ -161,6 +164,10 @@ def sec2dtstr(seconds, show_zeroes=True):
     return s
 
 
+def sec2dtstr_with_dnf(seconds, show_zeroes=True):
+    return sec2dtstr(seconds, show_zeroes, dnf_as_string=True)
+
+
 def sec2dt(seconds):
     if isnan(seconds):
         return seconds
@@ -176,7 +183,23 @@ def represents_int(s):
         return False
 
 
-def get_pb_progression(solves_data, puzzle, category, ao_len, has_dates, timezone):
+def times_list_to_str(s, ao_len, outliers_to_trim):
+    outliers_index = NaN
+    if ao_len > 3:
+        # largest = s.nlargest(outliers_to_trim).index
+        largest = s.sort_values().tail(outliers_to_trim).index  # using sort and not nlargest for NaN ordering
+        smallest = s.nsmallest(outliers_to_trim).index
+        outliers_index = smallest.union(largest)
+
+    s = s.apply(sec2dtstr_with_dnf)
+
+    if ao_len > 3:
+        s.loc[outliers_index] = s.loc[outliers_index].apply(lambda x: '(' + x + ')')
+
+    return s.to_string(header=False, index=False).replace('\n', ', ')
+
+
+def get_pb_progression(solves_data, puzzle, category, ao_len, has_dates, timezone, trim_percentage):
     if ao_len == 1:
         series = 'single'
         series_rsd = None
@@ -229,10 +252,17 @@ def get_pb_progression(solves_data, puzzle, category, ao_len, has_dates, timezon
     solves_data_pb['PB ' + series] = solves_data_pb[series].apply(sec2dtstr)
     solves_data_pb.rename(inplace=True, columns={"index": "Solve #"})
 
+    if ao_len in (3, 5, 12):
+        outliers_to_trim = ceil(ao_len * (trim_percentage / 100))
+        solves_data_pb['Times List'] = solves_data_pb.apply(
+            lambda row: times_list_to_str(solves_data_part['single'].iloc[row.name - ao_len + 1: row.name + 1],
+                                          ao_len, outliers_to_trim),
+            axis=1)
+
     return solves_data_pb
 
 
-def get_all_pb_progressions(solves_data, puzzle, category, has_dates, timezone):
+def get_all_pb_progressions(solves_data, puzzle, category, has_dates, timezone, trim_percentage):
     solves_data_part = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)]
     res = OrderedDict()
     for ao_len in (1, 3, 5, 12, 50, 100, 1000):
@@ -244,7 +274,8 @@ def get_all_pb_progressions(solves_data, puzzle, category, has_dates, timezone):
             series = 'ao' + str(ao_len)
 
         if not solves_data_part[series].isnull().all():
-            res[ao_len] = get_pb_progression(solves_data, puzzle, category, ao_len, has_dates, timezone)
+            res[ao_len] = get_pb_progression(solves_data, puzzle, category, ao_len, has_dates, timezone,
+                                             trim_percentage)
     return res
 
 
@@ -355,6 +386,8 @@ def generate_pbs_display(pb_progressions, has_dates):
         pbs = pbs.iloc[::-1]
         if has_dates:
             column_list = ['PB ' + series, 'Date & Time', 'PB For Time', 'Solve #', 'PB For # Solves']
+            if ao_len in (3, 5, 12):
+                column_list.append('Times List')
             if ao_len > 1:
                 column_list.append(series_rsd)
 
@@ -370,7 +403,9 @@ def generate_pbs_display(pb_progressions, has_dates):
             else:
                 pbs_display['PB For Time'] = pbs_display['PB For Time'].fillna(value='--')
         else:
-            column_list = ['PB ' + series, 'Solve #', 'PB For # Solves']
+            column_list = ['PB ' + series, 'Solve #', 'PB For # Solves', 'Times List']
+            if ao_len in (3, 5, 12):
+                column_list.append('Times List')
             if ao_len > 1:
                 column_list.append(series_rsd)
 
@@ -384,7 +419,7 @@ def generate_pbs_display(pb_progressions, has_dates):
     return res
 
 
-def get_top_solves(solves_data_part, ao_len, top_n, has_dates):
+def get_top_solves(solves_data_part, ao_len, top_n, has_dates, trim_percentage):
     if ao_len == 1:
         series = 'single'
         series_rsd = None
@@ -400,12 +435,25 @@ def get_top_solves(solves_data_part, ao_len, top_n, has_dates):
     else:
         column_list = [series, 'Solve #']
 
+    if ao_len in (3, 5, 12):
+        column_list.append('Times List')
+
     if ao_len > 1:
         column_list.append(series_rsd)
 
-    top_solves = solves_data_part[(solves_data_part['Penalty'] != 2) & (solves_data_part[series].notnull())][
-        column_list].sort_values([series, 'Solve #']).head(top_n)
+    top_solves = solves_data_part[
+        (solves_data_part['Penalty'] != 2) & (solves_data_part[series].notnull())].sort_values(
+        [series, 'Solve #']).head(top_n)
     top_solves[series] = top_solves[series].apply(sec2dtstr)
+
+    if ao_len in (3, 5, 12):
+        outliers_to_trim = ceil(ao_len * (trim_percentage / 100))
+        top_solves['Times List'] = top_solves.apply(
+            lambda row: times_list_to_str(solves_data_part['single'].iloc[row.name - ao_len + 1: row.name + 1],
+                                          ao_len, outliers_to_trim),
+            axis=1)
+
+    top_solves = top_solves[column_list]
 
     if ao_len > 1:
         top_solves[series_rsd] = top_solves[series_rsd].apply(lambda x: '{:.1%}'.format(x))
@@ -426,7 +474,7 @@ def get_top_solves(solves_data_part, ao_len, top_n, has_dates):
     return top_solves
 
 
-def get_all_top_solves(solves_data, puzzle, category, has_dates):
+def get_all_top_solves(solves_data, puzzle, category, has_dates, trim_percentage):
     top_n = 50
 
     solves_data_part = solves_data[(solves_data['Puzzle'] == puzzle) & (solves_data['Category'] == category)].copy(
@@ -448,7 +496,7 @@ def get_all_top_solves(solves_data, puzzle, category, has_dates):
         else:
             series = 'ao' + str(ao_len)
         if not solves_data_part[series].isnull().all():
-            res[series] = get_top_solves(solves_data_part, ao_len, top_n, has_dates)
+            res[series] = get_top_solves(solves_data_part, ao_len, top_n, has_dates, trim_percentage)
     return res
 
 
@@ -467,7 +515,8 @@ def is_display_puzzle_name(timer_type):
         return False
 
 
-def get_all_solves_details(solves_data, has_dates, timezone, chart_by, secondary_y_axis, subx_thresholds):
+def get_all_solves_details(solves_data, has_dates, timezone, chart_by, secondary_y_axis, subx_thresholds,
+                           trim_percentage):
     # generate a nested dict puzzle -> category -> pb progression df
     puzcats = {k: sorted(g['Category'].tolist(), key=lambda s: str(s).casefold())
                for k, g in solves_data[['Puzzle', 'Category']].drop_duplicates().groupby('Puzzle')}
@@ -476,10 +525,10 @@ def get_all_solves_details(solves_data, has_dates, timezone, chart_by, secondary
     for puz, cats in puzcats.items():
         catdict = OrderedDict()
         for cat in cats:
-            pb_progressions = get_all_pb_progressions(solves_data, puz, cat, has_dates, timezone)
+            pb_progressions = get_all_pb_progressions(solves_data, puz, cat, has_dates, timezone, trim_percentage)
             pbs_display = generate_pbs_display(pb_progressions, has_dates)
 
-            top_solves = get_all_top_solves(solves_data, puz, cat, has_dates)
+            top_solves = get_all_top_solves(solves_data, puz, cat, has_dates, trim_percentage)
 
             first_subx_progressions = get_all_first_subx_progressions(pb_progressions, has_dates, timezone, solves_data,
                                                                       puz, cat)
@@ -1402,7 +1451,7 @@ def process_data(file, chart_by, secondary_y_axis, subx_threshold_mode, subx_ove
              'ao50_cummin', 'ao100_cummin', 'ao1000_cummin']].fillna(method='ffill')
 
     solves_details = get_all_solves_details(solves_data, has_dates, timezone, chart_by, secondary_y_axis,
-                                            subx_thresholds)
+                                            subx_thresholds, trim_percentage)
     overall_pbs = get_overall_pbs(solves_data, timer_type)
     if has_dates:
         solves_by_dates = get_solves_by_dates(solves_data, timer_type, day_end_hour)
