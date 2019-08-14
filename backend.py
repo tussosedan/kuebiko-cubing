@@ -186,7 +186,6 @@ def represents_int(s):
 def times_list_to_str(s, ao_len, outliers_to_trim):
     outliers_index = NaN
     if ao_len > 3:
-        # largest = s.nlargest(outliers_to_trim).index
         largest = s.sort_values().tail(outliers_to_trim).index  # using sort and not nlargest for NaN ordering
         smallest = s.nsmallest(outliers_to_trim).index
         outliers_index = smallest.union(largest)
@@ -194,9 +193,9 @@ def times_list_to_str(s, ao_len, outliers_to_trim):
     s = s.apply(sec2dtstr_with_dnf)
 
     if ao_len > 3:
-        s.loc[outliers_index] = s.loc[outliers_index].apply(lambda x: '(' + x + ')')
+        s.loc[outliers_index] = '(' + s.loc[outliers_index] + ')'
 
-    return s.to_string(header=False, index=False).replace('\n', ', ')
+    return ', '.join(s)
 
 
 def get_pb_progression(solves_data, puzzle, category, ao_len, has_dates, timezone, trim_percentage):
@@ -403,7 +402,7 @@ def generate_pbs_display(pb_progressions, has_dates):
             else:
                 pbs_display['PB For Time'] = pbs_display['PB For Time'].fillna(value='--')
         else:
-            column_list = ['PB ' + series, 'Solve #', 'PB For # Solves', 'Times List']
+            column_list = ['PB ' + series, 'Solve #', 'PB For # Solves']
             if ao_len in (3, 5, 12):
                 column_list.append('Times List')
             if ao_len > 1:
