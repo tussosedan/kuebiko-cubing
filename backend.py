@@ -440,8 +440,7 @@ def get_top_solves(solves_data_part, ao_len, top_n, has_dates, trim_percentage):
     if ao_len > 1:
         column_list.append(series_rsd)
 
-    top_solves = solves_data_part[
-        (solves_data_part['Penalty'] != 2) & (solves_data_part[series].notnull())].sort_values(
+    top_solves = solves_data_part[solves_data_part[series].notnull()].sort_values(
         [series, 'Solve #']).head(top_n)
     top_solves[series] = top_solves[series].apply(sec2dtstr)
 
@@ -566,7 +565,7 @@ def create_pbs_display_value(time, date=None, rsd=None):
 
 
 def get_overall_pbs(solves_data, timer_type):
-    min_idx = solves_data[solves_data['Penalty'] != 2][
+    min_idx = solves_data[
         ['Puzzle', 'Category', 'single', 'mo3', 'ao5', 'ao12', 'ao50', 'ao100', 'ao1000']]. \
         groupby(['Puzzle', 'Category']).idxmin()
 
