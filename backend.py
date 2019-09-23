@@ -1137,7 +1137,7 @@ def create_dataframe(file, timezone):
                     date = None
                 else:
                     # new version, with dates (starting December 2018)
-                    times, scramble, notes, date = solve_data
+                    times, scramble, notes, date, *rest = solve_data  # rest can include bluetooth data and future stuff
                     has_dates = True
 
                 if times[0] == 2000:
