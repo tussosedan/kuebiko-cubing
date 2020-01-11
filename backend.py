@@ -22,6 +22,21 @@ import os
 
 WCA_DATA_FOLDER = r'C:\downloads'
 
+# Defines how wide (in seconds) the histogram bins should be for each event.
+# Small bins for longer events (like 1 second bins for 5x5) appear very noisy
+# because each individual bin has few solves
+PUZZLE_HISTO_BIN_SIZES = {
+    '222': 1,
+    '333': 1,
+    '444': 5,
+    '555': 5,
+    '666': 10,
+    '777': 10,
+    'mega': 10,
+    'pyra': 1,
+    'skewb': 1,
+    'sq1': 5
+}
 
 @jit
 def binary_search_2d(a, x, size):
@@ -826,12 +841,31 @@ def get_solves_plot(solves_data, puzzle, category, has_dates, chart_by, pb_progr
     return plot(fig, include_plotlyjs=False, output_type='div', config=config)
 
 
-def generate_histogram(plot_data_raw, name):
+def generate_histogram(plot_data_raw, name, puzzle):
+
+    try:
+        bin_size_seconds = PUZZLE_HISTO_BIN_SIZES[puzzle]
+    except KeyError:
+        bin_size_seconds = 1
+
     max_time = int(plot_data_raw.max()) + 1
     min_time = int(plot_data_raw.min())
-    intervals = list(range(min_time, max_time + 1))
+
+    # Floor the histo bin start point down to the nearest multiple of the bin size,
+    # so the bins don't start at a weird point (for bin_size_seconds = 5,
+    # we want bins 10-15, 15-20, 20-25, not 12-17, 17-22, 22-27, etc)
+    #
+    # ex where bin_size_seconds = 5
+    #    14 --> 10
+    #    16 --> 15
+    #    20 --> 20
+    bin_start_time = min_time - (min_time % bin_size_seconds)
+
+    # Only grab every Nth second so the bins are `bin_size_seconds` wide
+    intervals = list(range(bin_start_time, max_time + 1))[::bin_size_seconds]
+
     intervals_dt = [sec2dt(sec) for sec in intervals]
-    labels = [sec2dtstr(sec) + "-" + sec2dtstr(sec + 0.99) for sec in intervals[:-1]]
+    labels = [sec2dtstr(sec) + "-" + sec2dtstr(sec + (bin_size_seconds - 0.01)) for sec in intervals[:-1]]
 
     bins = cut(plot_data_raw, intervals, right=False, labels=labels)
     plot_data = plot_data_raw.groupby(bins).count()
@@ -853,31 +887,31 @@ def get_histograms_plot(solves_data, puzzle, category):
     solves_count = len(solves_data_part)
 
     plot_data_raw = solves_data_part['single']
-    data.append(generate_histogram(plot_data_raw, 'all'))
+    data.append(generate_histogram(plot_data_raw, 'all', puzzle))
     annotations['all'] = 'all ' + str(solves_count) + ' solves'
 
     if solves_count > 100:
         plot_data_raw = solves_data_part[['single', 'ao100', 'rsd100']][-100:]
-        data.append(generate_histogram(plot_data_raw['single'], 'last 100'))
+        data.append(generate_histogram(plot_data_raw['single'], 'last 100', puzzle))
         annotations['last 100'] = 'last ao100: ' + str(plot_data_raw['ao100'].iloc[-1]) + \
                                   '<br>rsd100: ' + '{:.1%}'.format(plot_data_raw['rsd100'].iloc[-1])
 
     part_reindexed = solves_data_part[['single', 'ao100', 'ao1000', 'rsd100', 'rsd1000']].reset_index()
     idxmin = part_reindexed['ao100'].idxmin()
     if notnull(idxmin):
-        data.append(generate_histogram(part_reindexed['single'][idxmin + 1 - 100: idxmin + 1], 'PB ao100'))
+        data.append(generate_histogram(part_reindexed['single'][idxmin + 1 - 100: idxmin + 1], 'PB ao100', puzzle))
         annotations['PB ao100'] = 'PB ao100: ' + str(part_reindexed['ao100'][idxmin]) + \
                                   '<br>rsd100: ' + '{:.1%}'.format(part_reindexed['rsd100'][idxmin])
 
     if solves_count > 1000:
         plot_data_raw = solves_data_part[['single', 'ao1000', 'rsd1000']][-1000:]
-        data.append(generate_histogram(plot_data_raw['single'], 'last 1000'))
+        data.append(generate_histogram(plot_data_raw['single'], 'last 1000', puzzle))
         annotations['last 1000'] = 'last ao1000: ' + str(plot_data_raw['ao1000'].iloc[-1]) + \
                                    '<br>rsd1000: ' + '{:.1%}'.format(plot_data_raw['rsd1000'].iloc[-1])
 
     idxmin = part_reindexed['ao1000'].idxmin()
     if notnull(idxmin):
-        data.append(generate_histogram(part_reindexed['single'][idxmin + 1 - 1000: idxmin + 1], 'PB ao1000'))
+        data.append(generate_histogram(part_reindexed['single'][idxmin + 1 - 1000: idxmin + 1], 'PB ao1000', puzzle))
         annotations['PB ao1000'] = 'PB ao1000: ' + str(part_reindexed['ao1000'][idxmin]) + \
                                    '<br>rsd1000: ' + '{:.1%}'.format(part_reindexed['rsd1000'][idxmin])
 
