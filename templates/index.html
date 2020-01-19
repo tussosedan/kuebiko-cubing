@@ -43,7 +43,7 @@
                 </div>
                 <br/>
                 <div class="alert alert-primary" role="alert">
-                    New! Per-session PBs & Top 50 tabs now include times lists for mo3/ao5/ao12
+                    New! You can now select histogram bin sizes for each puzzle in the advanced options below.
                 </div>
                 <br/>
                 <div class="accordion col-12 col-sm-10 col-md-8 mx-auto" id="optionsAccordion">
@@ -199,10 +199,145 @@
                                         </label>
                                     </div>
                                 </div>
+                                <div class="row align-items-baseline">
+                                  <div class="col-6">
+                                    <div class="row align-items-baseline">
+                                      <div class="col p-2 text-left h6">
+                                          <abbr data-toggle="tooltip" data-placement="bottom" data-html="true" class="text-nowrap"
+                                          title="<div class='text-left'>Smaller bins sizes give better resolution at the cost of additional noise.<br><br>Larger bins can make histograms easier to read for longer events, or events with less data.</div>">
+                                              Histogram Bin Sizes
+                                          </abbr>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div class="col-6">
+                                    <div class="row align-items-baseline">
+                                      <div class="label">2x2</div>
+                                      <div class="col p-2">
+                                          <select class="custom-select" name="histo-222">
+                                              <option value="1" selected>1 second</option>
+                                              <option value="5">5 seconds</option>
+                                              <option value="10">10 seconds</option>
+                                              <option value="15">15 seconds</option>
+                                              <option value="30">30 seconds</option>
+                                          </select>
+                                      </div>
+                                    </div>
+                                    <div class="row align-items-baseline">
+                                      <div class="label">3x3</div>
+                                      <div class="col p-2">
+                                          <select class="custom-select" name="histo-333">
+                                              <option value="1" selected>1 second</option>
+                                              <option value="5">5 seconds</option>
+                                              <option value="10">10 seconds</option>
+                                              <option value="15">15 seconds</option>
+                                              <option value="30">30 seconds</option>
+                                          </select>
+                                      </div>
+                                    </div>
+                                    <div class="row align-items-baseline">
+                                      <div class="label">4x4</div>
+                                      <div class="col p-2">
+                                          <select class="custom-select" name="histo-444">
+                                              <option value="1">1 second</option>
+                                              <option value="5" selected>5 seconds</option>
+                                              <option value="10">10 seconds</option>
+                                              <option value="15">15 seconds</option>
+                                              <option value="30">30 seconds</option>
+                                          </select>
+                                      </div>
+                                    </div>
+                                    <div class="row align-items-baseline">
+                                      <div class="label">5x5</div>
+                                      <div class="col p-2">
+                                          <select class="custom-select" name="histo-555">
+                                              <option value="1">1 second</option>
+                                              <option value="5" selected>5 seconds</option>
+                                              <option value="10">10 seconds</option>
+                                              <option value="15">15 seconds</option>
+                                              <option value="30">30 seconds</option>
+                                          </select>
+                                      </div>
+                                    </div>
+                                    <div class="row align-items-baseline">
+                                      <div class="label">6x6</div>
+                                      <div class="col p-2">
+                                          <select class="custom-select" name="histo-666">
+                                              <option value="1">1 second</option>
+                                              <option value="5">5 seconds</option>
+                                              <option value="10" selected>10 seconds</option>
+                                              <option value="15">15 seconds</option>
+                                              <option value="30">30 seconds</option>
+                                          </select>
+                                      </div>
+                                    </div>
+                                    <div class="row align-items-baseline">
+                                      <div class="label">7x7</div>
+                                      <div class="col p-2">
+                                          <select class="custom-select" name="histo-777">
+                                              <option value="1">1 second</option>
+                                              <option value="5">5 seconds</option>
+                                              <option value="10" selected>10 seconds</option>
+                                              <option value="15">15 seconds</option>
+                                              <option value="30">30 seconds</option>
+                                          </select>
+                                      </div>
+                                    </div>
+                                    <div class="row align-items-baseline">
+                                      <div class="label">Megaminx</div>
+                                      <div class="col p-2">
+                                          <select class="custom-select" name="histo-mega">
+                                              <option value="1">1 second</option>
+                                              <option value="5">5 seconds</option>
+                                              <option value="10" selected>10 seconds</option>
+                                              <option value="15">15 seconds</option>
+                                              <option value="30">30 seconds</option>
+                                          </select>
+                                      </div>
+                                    </div>
+                                    <div class="row align-items-baseline">
+                                      <div class="label">Pyraminx</div>
+                                      <div class="col p-2">
+                                          <select class="custom-select" name="histo-pyra">
+                                              <option value="1" selected>1 second</option>
+                                              <option value="5">5 seconds</option>
+                                              <option value="10">10 seconds</option>
+                                              <option value="15">15 seconds</option>
+                                              <option value="30">30 seconds</option>
+                                          </select>
+                                      </div>
+                                    </div>
+                                    <div class="row align-items-baseline">
+                                      <div class="label">Skewb</div>
+                                      <div class="col p-2">
+                                          <select class="custom-select" name="histo-skewb">
+                                              <option value="1" selected>1 second</option>
+                                              <option value="5">5 seconds</option>
+                                              <option value="10">10 seconds</option>
+                                              <option value="15">15 seconds</option>
+                                              <option value="30">30 seconds</option>
+                                          </select>
+                                      </div>
+                                    </div>
+                                    <div class="row align-items-baseline">
+                                      <div class="label">Square-1</div>
+                                      <div class="col p-2">
+                                          <select class="custom-select" name="histo-sq1">
+                                              <option value="1">1 second</option>
+                                              <option value="5" selected>5 seconds</option>
+                                              <option value="10">10 seconds</option>
+                                              <option value="15">15 seconds</option>
+                                              <option value="30">30 seconds</option>
+                                          </select>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
                 <input type="hidden" id="tz" name="tz" value="UTC"/>
                 <br/><br/>
                 <input type="file" name="file" id="file" class="form-control-file mx-auto" style="width: 220px;">

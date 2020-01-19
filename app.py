@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, flash, Markup
-from backend import process_data, WCAIDValueError
+from backend import process_data, WCAIDValueError, set_histo_sizes
 import os
 import traceback
 import time
@@ -9,6 +9,8 @@ from io import BytesIO
 
 ALLOWED_EXTENSIONS = {'txt', 'json', 'csv'}
 UPLOAD_FOLDER = r'C:\uploads'
+
+PUZZLES_SHORT = ('222', '333', '444', '555', '666', '777', 'mega', 'pyra', 'skewb', 'sq1')
 
 app = Flask(__name__)
 app.secret_key = "super secret key !@#"
@@ -63,6 +65,11 @@ def index():
             trim_percentage = request.form.get('trim-percentage', 5, type=int)
             merge_sessions = request.form.get('merge-sessions', 'merge-sessions-no')
             timezone = request.form.get('tz', 'UTC')
+
+            # Get all the histogram bin sizes for each puzzle from the advanced options form
+            get_histo_size = lambda puzzle: request.form.get('histo-' + puzzle, type=int)
+            histo_sizes = {puzzle : get_histo_size(puzzle) for puzzle in PUZZLES_SHORT}
+            set_histo_sizes(histo_sizes)
 
             if secondary_y_axis == 'none':
                 secondary_y_axis = None
