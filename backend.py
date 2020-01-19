@@ -38,6 +38,12 @@ PUZZLE_HISTO_BIN_SIZES = {
     'sq1': 5
 }
 
+def set_histo_sizes(puzzle_histo_sizes):
+    """ Sets the puzzle histogram bin sizes based on the values selected in
+    the advanced options. """
+    for puzzle, value in puzzle_histo_sizes.items():
+        PUZZLE_HISTO_BIN_SIZES[puzzle] = value
+
 @jit
 def binary_search_2d(a, x, size):
     lo = 0
