@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, flash, Markup
+from flask import Flask, render_template, request, redirect, flash, Markup, send_from_directory
 from backend import process_data, WCAIDValueError
 import os
 import traceback
@@ -110,6 +110,11 @@ def index():
                 else:
                     raise
     return render_template("index.html")
+
+
+@app.route('/ads.txt')
+def static_from_root():
+    return send_from_directory(app.static_folder, request.path[1:])
 
 
 # noinspection PyUnusedLocal
