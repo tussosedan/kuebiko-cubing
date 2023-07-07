@@ -112,11 +112,6 @@ def index():
     return render_template("index.html")
 
 
-@app.route('/ads.txt')
-def static_from_root():
-    return send_from_directory(app.static_folder, request.path[1:])
-
-
 # noinspection PyUnusedLocal
 @app.errorhandler(413)
 def request_entity_too_large(e):
